@@ -18,6 +18,8 @@
   var lastUpdateTime = undefined;
   var directionsRenderer = new google.maps.DirectionsRenderer();
   var loadedStationsFromWeb = false;
+  var namesLoaded = false;
+  var locationsLoaded = false;
 
   function numericTimeToHumanTime(time) {
     var hour = String(Math.floor(time));
@@ -30,7 +32,7 @@
     $('#timeLabel').html(numericTimeToHumanTime(time));
   }
 
-  function getStatsFromFeed(rowFeed) {
+  function getIntStatsFromFeed(rowFeed) {
     var result = {};
     var rowSplits = rowFeed.split(',');
     for (var i = 0; i < rowSplits.length; ++i) {
@@ -41,6 +43,22 @@
         continue;
       }
       var value = parseInt(oneStat.split(':')[1].replace(/^\s+/,''));  // skip spaces
+      result[id] = value;
+    }
+    return result;
+  }
+
+  function getStringStatsFromFeed(rowFeed) {
+    var result = {};
+    var rowSplits = rowFeed.split(',');
+    for (var i = 0; i < rowSplits.length; ++i) {
+      // one stat would be of the form " id204: 3" or  _6woj3: 375".
+      var oneStat = rowSplits[i];
+      var id = oneStat.split(':')[0].replace(/^\s+/,'');  // skip spaces
+      if (id.indexOf('id') != 0) {
+        continue;
+      }
+      var value = oneStat.split(':')[1].replace(/^\s+/,'');  // skip spaces
       result[id] = value;
     }
     return result;
@@ -99,18 +117,6 @@
     return minId;
   }
 
-  function findNearest() {
-    var start = new Date().getTime();
-    var closestId = findClosestStation(userPosition);
-    if (!closestId) {
-      return;
-    }
-    var station = stations[closestId];
-    var circle = new google.maps.Circle({map: map, center: station.latLng , radius: 20, fillColor: 'darkgray'});
-    map.setCenter(station.latLng);
-    console.info("took secs: " + (new Date().getTime() - start) / 1000);
-  }
-
   function timelyCallback(value) {
     resetInfoWindows();
     clearTimeout(timeUpdateTimeout);
@@ -118,7 +124,7 @@
     var allKeys = {};
     var key;
     for (var i = 0; i < ROWS_PER_SAMPLE; ++i) {
-      stats[i] = getStatsFromFeed(value.feed.entry[i].content["$t"]);
+      stats[i] = getIntStatsFromFeed(value.feed.entry[i].content["$t"]);
       for (key in stats[i]) {
         allKeys[key] = {};
       }
@@ -247,7 +253,7 @@
     }
     timeUpdateTimeout = setTimeout(onSetMapTitle, new Date(lastUpdateTime.getTime() + 6.1 /* mins */ * 60 * 1000 - new Date().getTime()));
     resetInfoWindows();
-    currentStatus = getStatsFromFeed(value.entry.content["$t"]);
+    currentStatus = getIntStatsFromFeed(value.entry.content["$t"]);
     for (key in currentStatus) {
       var status = currentStatus[key];
       var station = getOrCreateStationInfo(key);
@@ -279,8 +285,8 @@
   }
 
   function createStationRankingIFrame() {
-    if ($('#stationRankIFrame').length == 0) {
-      $('#stationRankPlaceholder').append("<iframe id='stationRankSpan' width='350' height='640' src='https://docs.google.com/spreadsheet/pub?hl=en_US&hl=en_US&key=0AoOjWPdv2TXodHlMTTFrakJKR2F6cldJTGktQnNXV0E&single=true&gid=9&output=html'></iframe>");
+    if ($('#stationRankFrame').length == 0) {
+      $('#stationRankPlaceholder').append("<iframe id='stationRankFrame' width='350' height='640' src='https://docs.google.com/spreadsheet/pub?hl=en_US&hl=en_US&key=0AoOjWPdv2TXodHlMTTFrakJKR2F6cldJTGktQnNXV0E&single=true&gid=9&output=html'></iframe>");
     }
   }
 
@@ -331,6 +337,7 @@
     setMapTitle('תחזית לשעה ' + numericTimeToHumanTime(time));
   }
 
+/*
   function stationsCallback(stationsInfo) {
     // longLats of the form:
     // id202: 32.122; 34.818, id112: 32.113; 34.801, ....
@@ -364,6 +371,59 @@
     localStorage['stations'] = JSON.stringify(stations);
     resetInfoWindows();
     nowStatus();
+  }
+*/
+  function stationLocationsCallback(stationsInfo) {
+    // longLats of the form:
+    // id202: 32.122; 34.818, id112: 32.113; 34.801, ....
+    var longLatsString = stationsInfo.entry.content["$t"];  
+    var longLats = getStringStatsFromFeed(longLatsString);
+
+    for (var id in longLats) {
+      var station;
+      if (stations[id]) {
+        station = stations[id];
+      } else {
+        station = {id: id};
+        stations[id] = station;
+      }
+      // We create the lat, lng fields for presistency, and the latLng for usage throughout the code.
+      station.lat = parseFloat(longLats[id].split(';')[0]); 
+      station.lng = parseFloat(longLats[id].split(';')[1]); 
+      station.latLng = new google.maps.LatLng(station.lat, station.lng);
+      getOrCreateStationInfo(id);
+    }
+//    localStorage['stations'] = JSON.stringify(stations);
+    locationsLoaded = true;
+    if (namesLoaded) {
+      resetInfoWindows();
+      nowStatus();
+    }
+  }
+
+  function stationNamesCallback(stationsInfo) {
+    // stationNames is of the form:
+    // id202: אהרון בקר 15, id112: אונברסיטה איינשטיין 78, ...
+    var namesString = stationsInfo.entry.content["$t"];  
+    var names = getStringStatsFromFeed(namesString);
+
+    for (var id in names) {
+      var station;
+      if (stations[id]) {
+        station = stations[id];
+      } else {
+        station = {id: id};
+        stations[id] = station;
+      }
+      station.displayName = names[id];
+      getOrCreateStationInfo(id);
+    }
+//    localStorage['stations'] = JSON.stringify(stations);
+    namesLoaded = true;
+    if (locationsLoaded) {
+      resetInfoWindows();
+      nowStatus();
+    }
   }
 
   function setMapTitle(title) {
@@ -418,13 +478,31 @@
   }
 
   function loadStationsFromWeb() {
+    var LOCATIONS_ROW_ID = '205aqv';
+    var NAMES_ROW_ID = 'cn6ca';
+    var NEW_LINK_LOCATIONS = 'https://spreadsheets.google.com/feeds/list/0AoOjWPdv2TXodHlMTTFrakJKR2F6cldJTGktQnNXV0E/od6/public/basic/' + LOCATIONS_ROW_ID + 
+      '?alt=json-in-script&callback=stationLocationsCallback';  // does not work yet - retrieves only 
+    var NEW_LINK_NAMES = 'https://spreadsheets.google.com/feeds/list/0AoOjWPdv2TXodHlMTTFrakJKR2F6cldJTGktQnNXV0E/od6/public/basic/' + NAMES_ROW_ID + 
+      '?alt=json-in-script&callback=stationNamesCallback';  // does not work yet - retrieves only 
+/*    var OLD_LINK = 'https://spreadsheets.google.com/feeds/list/0AoOjWPdv2TXodHlMTTFrakJKR2F6cldJTGktQnNXV0E/od6/public/basic?alt=json-in-script&callback=stationsCallback&max-results=2';*/
     if (loadedStationsFromWeb) {
       return;
     }
     loadedStationsFromWeb = true;
-    var script = document.createElement('script');
+/*    var script = document.createElement('script');
     script.setAttribute('type', 'text/javascript');
-    script.setAttribute('src', 'https://spreadsheets.google.com/feeds/list/0AoOjWPdv2TXodHlMTTFrakJKR2F6cldJTGktQnNXV0E/od6/public/basic?alt=json-in-script&callback=stationsCallback&max-results=2');
+    script.setAttribute('src', OLD_LINK);
+    $('head').append(script);*/
+
+    var script;
+    script = document.createElement('script');
+    script.setAttribute('type', 'text/javascript');
+    script.setAttribute('src', NEW_LINK_LOCATIONS);
+    $('head').append(script);
+
+    script = document.createElement('script');
+    script.setAttribute('type', 'text/javascript');
+    script.setAttribute('src', NEW_LINK_NAMES);
     $('head').append(script);
   }
 
@@ -448,6 +526,7 @@
 
   function initialize() {
     // Create map.
+    adjustForSmallScreen();
     var latlng = new google.maps.LatLng(32.066792, 34.777694);  // Merkaz Tel Aviv
     var mapOptions = {
       zoom: 16,
@@ -468,12 +547,15 @@
 		});
 
     // Retrieve stations.
+/*
     if (loadStationsFromLocalCache()) {
       resetInfoWindows();
       nowStatus();
     } else {
       loadStationsFromWeb();
     }
+*/
+    loadStationsFromWeb();
  
     // Get user location.
     getUserLocation();
@@ -496,4 +578,13 @@
 		map.controls[google.maps.ControlPosition.TOP_LEFT].push(myTextDiv.get()[0]);
   }
 
-
+function adjustForSmallScreen() {
+  if (screen.availWidth <= 800) {
+     $('#legend').hide();
+     $('#upperBar').hide();
+     $('#mainTable').width('100%');
+     $('#mainTable').height('90%');
+     $('#mapTd').width('100%');
+     $('#lowerText').remove();
+  }
+}
