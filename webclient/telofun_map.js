@@ -6,6 +6,7 @@
   var neBound = new google.maps.LatLng(32.13194, 34.847946);
   var swBound = new google.maps.LatLng(32.030381, 34.739285);
   var tlvBounds = new google.maps.LatLngBounds(swBound, neBound);
+  var oldSize = 0;
 
 // Global vars.
   var stations = {};  // static information about stations, mapped by id.
@@ -17,9 +18,9 @@
   var timeUpdateTimeout = undefined;
   var lastUpdateTime = undefined;
   var directionsRenderer = new google.maps.DirectionsRenderer();
-  var loadedStationsFromWeb = false;
   var namesLoaded = false;
   var locationsLoaded = false;
+  var sortedStations = [];
 
   function numericTimeToHumanTime(time) {
     var hour = String(Math.floor(time));
@@ -95,6 +96,10 @@
         }
         directionsRenderer.setMap(map);
         directionsRenderer.setDirections(result);
+        if (openInfoWindow) {
+          openInfoWindow.close();
+          openInfoWindow = null;
+        }
       }
     );
   }
@@ -181,17 +186,26 @@
       statsContent += statsArray.join(" ו");
 
       var station = stationsInfo[key];
-      station.marker.setIcon(image);
+      changeMarkerUrl(marker, image);
       var content = (statsContent != "") ? (statsContent + " בשעה זו") : "";
       $(station.infowindow.getContent()).append($(content));
     }
     // Turn all unknown stations into a question mark.
     for (key in stations) {
       if (!(key in allKeys)) {
-        stationsInfo[key].marker.setIcon('dunno.png');
+        changeMarkerUrl(stationsInfo[key].marker, 'dunno.png'); 
       }
     }
     showSpinner(false);
+  }
+
+  function changeMarkerUrl(marker, aUrl) {
+    if (!aUrl.indexOf) {
+      alert(aUrl);
+    }
+    var oldIcon = marker.getIcon();
+    marker.setIcon(new google.maps.MarkerImage(
+        aUrl, undefined, undefined, oldIcon.scaledSize ? oldIcon.scaledSize : undefined));
   }
 
   function formatTime(updated) {
@@ -208,14 +222,14 @@
   }
 
   function onSetMapTitle() {
-    setMapTitle('המצב נכון ל' + formatTime(lastUpdateTime));
+    setMapTitle('נכון ל' + formatTime(lastUpdateTime));
   }
 
   function getOrCreateStationInfo(id) {
-    if (!stations[id]) {
-      loadStationsFromWeb();
-    }
     if (stationsInfo[id]) {
+      if (!stationsInfo[id].marker.getPosition() && stations[id]) {
+        stationsInfo[id].marker.setPosition(stations[id].latLng);
+      }
       return stationsInfo[id];
     }
     var station = {};
@@ -224,6 +238,7 @@
     var marker = new google.maps.Marker({
         position: stations[id] ? stations[id].latLng : undefined,
         title: stations[id] ? stations[id].displayName : undefined,
+        icon: new google.maps.MarkerImage('nono.jpg')
     });
     station.marker = marker;
     marker.setMap(map);
@@ -245,13 +260,14 @@
   }
 
   function currentStatusCallback(value) {
-//      lastUpdateTime = new Date(value.feed.updated["$t"]);
       lastUpdateTime = new Date(value.entry.updated["$t"]);
     onSetMapTitle(); 
     if (timeUpdateTimeout) {
       clearTimeout(timeUpdateTimeout);
     }
-    timeUpdateTimeout = setTimeout(onSetMapTitle, new Date(lastUpdateTime.getTime() + 6.1 /* mins */ * 60 * 1000 - new Date().getTime()));
+    timeUpdateTimeout = 
+        setTimeout(onSetMapTitle, 
+            new Date(lastUpdateTime.getTime() + 6.1 /* mins */ * 60 * 1000 - new Date().getTime()));
     resetInfoWindows();
     currentStatus = getIntStatsFromFeed(value.entry.content["$t"]);
     for (key in currentStatus) {
@@ -274,7 +290,7 @@
       } else {
         image = 'greenbike.png';
       }
-      station.marker.setIcon(image);
+      changeMarkerUrl(station.marker, image);
       station.marker.setTitle(station.displayName + ', אופניים: ' + station.available_bikes + ' תחנות: ' + station.available_docks);
       $(station.infowindow.getContent()).append($( 
         '<p>' + '<span style="border: solid 1px"><img src="greenbike.png" title="אופניים פנויים" />' + station.available_bikes + "</span>" +  
@@ -290,7 +306,7 @@
     }
   }
 
-  function nowStatus() {
+  function getCurrentStationsStatus() {
     var CURRENT_STATUS_ROW = 484 - 1;
     var OLD_LINK = 'https://spreadsheets.google.com/feeds/list/0AoOjWPdv2TXodHlMTTFrakJKR2F6cldJTGktQnNXV0E/od6/public/basic?alt=json-in-script&callback=currentStatusCallback&start-index=' + CURRENT_STATUS_ROW + '&max-results=' + 1;
     var CURRENT_STATUS_ROW_ID = '25ncrc';
@@ -300,7 +316,7 @@
     showSpinner(true);
     for (key in stationsInfo) {
       if (stationsInfo[key].marker) {
-        stationsInfo[key].marker.setIcon('spinner.gif');
+        changeMarkerUrl(stationsInfo[key].marker, 'spinner.gif'); 
       }
     }
 
@@ -322,7 +338,7 @@
     var baseRow = START_ROW + ROWS_PER_SAMPLE * time * 4 - 1;  // first row considered headers
 
     for (key in stations) {
-      stationsInfo[key].marker.setIcon('spinner.gif');
+      changeMarkerUrl(stationsInfo[key].marker, 'spinner.gif');
     }
     showSpinner(true);
     var script = document.createElement('script');
@@ -337,42 +353,6 @@
     setMapTitle('תחזית לשעה ' + numericTimeToHumanTime(time));
   }
 
-/*
-  function stationsCallback(stationsInfo) {
-    // longLats of the form:
-    // id202: 32.122; 34.818, id112: 32.113; 34.801, ....
-
-    // stationNames is of the form:
-    // id202: אהרון בקר 15, id112: אונברסיטה איינשטיין 78, ...
-    var longLats = stationsInfo.feed.entry[0].content["$t"];  
-    longLats = longLats.substring(longLats.indexOf('id')).split(',');  // skip to the first "id" and split
-    var stationNames = stationsInfo.feed.entry[1].content["$t"];
-    stationNames = stationNames.substring(stationNames.indexOf('id')).split(',');  // skip to the first "id" and split
-    if (longLats.length != stationNames.length) {
-      alert('error in data (longLats.length != stationNames.length)');
-      exit;
-    }
-    for (var i = 0; i < longLats.length; i++) {
-      var longLatsSplits = longLats[i].split(':');
-      var idName = longLatsSplits[0].replace(/^\s+/,"");  // trim
-      if (idName.indexOf('id') != 0)  // spreadsheet has prefixing columns
-        continue;
-      var newStation = {};
-      newStation.id = idName;
-      // We create the lat, lng fields for presistency, and the latLng for usage throughout the code.
-      newStation.lat = parseFloat(longLatsSplits[1].split(';')[0]); 
-      newStation.lng = parseFloat(longLatsSplits[1].split(';')[1]); 
-      newStation.latLng = new google.maps.LatLng(newStation.lat, newStation.lng);
-      newStation.displayName = stationNames[i].split(':')[1];
-      stations[idName] = newStation;
-      // Create the appropriate dynamic station.
-      getOrCreateStationInfo(idName);
-    }
-    localStorage['stations'] = JSON.stringify(stations);
-    resetInfoWindows();
-    nowStatus();
-  }
-*/
   function stationLocationsCallback(stationsInfo) {
     // longLats of the form:
     // id202: 32.122; 34.818, id112: 32.113; 34.801, ....
@@ -391,13 +371,10 @@
       station.lat = parseFloat(longLats[id].split(';')[0]); 
       station.lng = parseFloat(longLats[id].split(';')[1]); 
       station.latLng = new google.maps.LatLng(station.lat, station.lng);
-      getOrCreateStationInfo(id);
     }
-//    localStorage['stations'] = JSON.stringify(stations);
     locationsLoaded = true;
     if (namesLoaded) {
-      resetInfoWindows();
-      nowStatus();
+      prepareMap();
     }
   }
 
@@ -416,15 +393,40 @@
         stations[id] = station;
       }
       station.displayName = names[id];
-      getOrCreateStationInfo(id);
     }
-//    localStorage['stations'] = JSON.stringify(stations);
     namesLoaded = true;
     if (locationsLoaded) {
-      resetInfoWindows();
-      nowStatus();
+      prepareMap();
     }
   }
+
+  function prepareMap() {
+    for (var id in stations) {
+      getOrCreateStationInfo(id);
+      sortedStations.push(stations[id]);
+    }
+    if (userPosition) {
+      for (i in sortedStations) {
+        var station = sortedStations[i];
+        station.distance = Math.round(google.maps.geometry.spherical.computeDistanceBetween(
+		        userPosition, station.latLng));
+      }
+		  sortedStations.sort(function(a,b) {
+		    return a.distance - b.distance;
+		  });
+      for (i in sortedStations) {
+        var station = sortedStations[i];
+        var line = $('<tr><td>' + station.displayName + 
+            '</td><td>' + stationsInfo[station.id].available_bikes +
+            '</td><td>' + stationsInfo[station.id].available_docks +
+            '</td><td>' + station.distance + '</td></tr>');
+        $('#stationDistanceTable').append(line);
+      }
+    }
+    resetInfoWindows();
+    getCurrentStationsStatus();
+  }
+
 
   function setMapTitle(title) {
     $('#mapTitle').text(title);
@@ -452,7 +454,7 @@
             }
             if (position.coords.accuracy < 500) {
               myPosCircle = new google.maps.Circle({map: map, center: userPosition, fillColor: 'darkgray', 
-                  fillOpacity: 0.4, strokeColor: 'black', radius: parseInt(position.coords.accuracy)});
+                  fillOpacity: 0.4, strokeColor: 'black', strokeOpacity: 0.7, radius: parseInt(position.coords.accuracy)});
             }
             if (map.getZoom() < 15) {
               map.setZoom(15);
@@ -470,11 +472,12 @@
     }
   }
 
-  function showMap(show) {
-    var itemToShow = show ? '#mapDiv' : '#stationRankingDiv';
-    var itemToHide = !show ? '#mapDiv' : '#stationRankingDiv';
-    $(itemToShow).show();
-    $(itemToHide).hide();
+  function showDiv(whatToShow) {
+    var divs = ['mapDiv', 'stationRankingDiv', 'stationDistanceDiv'];
+    for (i in divs) {
+      var div = divs[i];
+      $('#' + div).toggle(whatToShow == div);
+    }
   }
 
   function loadStationsFromWeb() {
@@ -484,15 +487,6 @@
       '?alt=json-in-script&callback=stationLocationsCallback';  // does not work yet - retrieves only 
     var NEW_LINK_NAMES = 'https://spreadsheets.google.com/feeds/list/0AoOjWPdv2TXodHlMTTFrakJKR2F6cldJTGktQnNXV0E/od6/public/basic/' + NAMES_ROW_ID + 
       '?alt=json-in-script&callback=stationNamesCallback';  // does not work yet - retrieves only 
-/*    var OLD_LINK = 'https://spreadsheets.google.com/feeds/list/0AoOjWPdv2TXodHlMTTFrakJKR2F6cldJTGktQnNXV0E/od6/public/basic?alt=json-in-script&callback=stationsCallback&max-results=2';*/
-    if (loadedStationsFromWeb) {
-      return;
-    }
-    loadedStationsFromWeb = true;
-/*    var script = document.createElement('script');
-    script.setAttribute('type', 'text/javascript');
-    script.setAttribute('src', OLD_LINK);
-    $('head').append(script);*/
 
     var script;
     script = document.createElement('script');
@@ -504,24 +498,7 @@
     script.setAttribute('type', 'text/javascript');
     script.setAttribute('src', NEW_LINK_NAMES);
     $('head').append(script);
-  }
-
-  function loadStationsFromLocalCache() {
-    if (!localStorage['stations']) {
-      return false;
-    }
-    stations = JSON.parse(localStorage['stations']);
-    // latLng's aren't created correctly, recreate them.
-    for (id in stations) {
-      var station = stations[id];
-      if (!station.id || !station.lat || !station.lng) {
-        return false;
-      }
-      station.latLng = new google.maps.LatLng(station.lat, station.lng);
-      // Create the dynamic station object.
-      getOrCreateStationInfo(id);
-    }
-    return true;
+    getCurrentStationsStatus();
   }
 
   function initialize() {
@@ -533,6 +510,7 @@
       center: latlng,
       mapTypeControl: false,
       scaleControl: true,
+      rotateControl: false,
       streetViewControl: false,
       zoomControl: true,
       mapTypeId: google.maps.MapTypeId.ROADMAP
@@ -545,35 +523,50 @@
           openInfoWindow = null;
         }
 		});
+    google.maps.event.addListener(map, 'zoom_changed', function() {
+        var size = map.getZoom() > 14 ? 36 : 24;
+        if (oldSize == size) {
+          return;  // no need to change the size of the icons.
+        }
+        oldSize = size;
+
+        for (id in stationsInfo) {
+          var oldIcon = stationsInfo[id].marker.getIcon();
+          stationsInfo[id].marker.setIcon(
+              new google.maps.MarkerImage(oldIcon.url, undefined, undefined, undefined, new google.maps.Size(size, size)));
+        }
+		});
 
     // Retrieve stations.
-/*
-    if (loadStationsFromLocalCache()) {
-      resetInfoWindows();
-      nowStatus();
-    } else {
-      loadStationsFromWeb();
-    }
-*/
     loadStationsFromWeb();
  
     // Get user location.
     getUserLocation();
 
-		var myTitle = $('<div>');
-		myTitle.css({'color': 'black', 'font-weight': 'bold', 'font-size': 'medium', 'width': '180px'});
-		myTitle.attr('id', 'mapTitle');
+		var mapTitle = $('<div>');
+		mapTitle.css({'color': 'black', 'font-weight': 'bold', 'font-size': 'medium', 'width': '180px'});
+		mapTitle.attr('id', 'mapTitle');
+
+    var imageDiv = $('<div>');
+    imageDiv.css({'float':'right'});
+
+    var refreshImg = $('<img>');
+    refreshImg.attr({'src': 'refresh.png', 'width': '20', 'height': '20', 'title':'רענן'});
+    refreshImg.css({ 'vertical-align': 'middle', 'padding-left': '1px', 'padding-right': '1px', 'border-left': 'solid black 1px'});
+    refreshImg.click(getCurrentStationsStatus);
 
     var myLocImg = $('<img>');
     myLocImg.attr({'src': 'myloc.png', 'width': '20', 'height': '20', 'title':'המקום שלי'});
-    myLocImg.css({'float': 'right', 'vertical-align': 'middle', 'padding-left': '2px', 'border-left': 'solid black 1px'});
+    myLocImg.css({ 'vertical-align': 'middle', 'padding-left': '1px', 'padding-right': '1px', 'border-left': 'solid black 1px'});
     myLocImg.click(function() { getUserLocation() });
+
+    imageDiv.append(refreshImg, myLocImg);
 
 		var myTextDiv = $('<div>');
 		myTextDiv.css({'background': 'white', 'opacity': 0.7, 'width': '190px', 'height' : '20px', 'border': 'solid black 1px', 'padding': '5px', 'text-align': 'center' });
 		var spinner = $('<img>');
 		spinner.attr({'src': 'spinner.gif', 'id': 'spinner', 'height': '19px', 'width': '19px'});
-    myTextDiv.append(myLocImg, myTitle, spinner);
+    myTextDiv.append(imageDiv, mapTitle, spinner);
 
 		map.controls[google.maps.ControlPosition.TOP_LEFT].push(myTextDiv.get()[0]);
   }
@@ -583,7 +576,7 @@ function adjustForSmallScreen() {
      $('#legend').hide();
      $('#upperBar').hide();
      $('#mainTable').width('100%');
-     $('#mainTable').height('90%');
+     $('#mainTable').height('100%');
      $('#mapTd').width('100%');
      $('#lowerText').remove();
   }
