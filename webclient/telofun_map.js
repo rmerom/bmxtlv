@@ -217,7 +217,7 @@
     stationsInfo[id] = station;
     var marker = new google.maps.Marker({
         position: stations[id] ? stations[id].latLng : undefined,
-        title: station.displayName,
+        title: stations[id] ? stations[id].displayName : undefined,
     });
     station.marker = marker;
     marker.setMap(map);
@@ -239,14 +239,15 @@
   }
 
   function currentStatusCallback(value) {
-    lastUpdateTime = new Date(value.feed.updated["$t"]);
+//      lastUpdateTime = new Date(value.feed.updated["$t"]);
+      lastUpdateTime = new Date(value.entry.updated["$t"]);
     onSetMapTitle(); 
     if (timeUpdateTimeout) {
       clearTimeout(timeUpdateTimeout);
     }
     timeUpdateTimeout = setTimeout(onSetMapTitle, new Date(lastUpdateTime.getTime() + 6.1 /* mins */ * 60 * 1000 - new Date().getTime()));
     resetInfoWindows();
-    currentStatus = getStatsFromFeed(value.feed.entry[0].content["$t"]);
+    currentStatus = getStatsFromFeed(value.entry.content["$t"]);
     for (key in currentStatus) {
       var status = currentStatus[key];
       var station = getOrCreateStationInfo(key);
@@ -285,6 +286,10 @@
 
   function nowStatus() {
     var CURRENT_STATUS_ROW = 484 - 1;
+    var OLD_LINK = 'https://spreadsheets.google.com/feeds/list/0AoOjWPdv2TXodHlMTTFrakJKR2F6cldJTGktQnNXV0E/od6/public/basic?alt=json-in-script&callback=currentStatusCallback&start-index=' + CURRENT_STATUS_ROW + '&max-results=' + 1;
+    var CURRENT_STATUS_ROW_ID = '25ncrc';
+    var NEW_LINK = 'https://spreadsheets.google.com/feeds/list/0AoOjWPdv2TXodHlMTTFrakJKR2F6cldJTGktQnNXV0E/od6/public/basic/' + CURRENT_STATUS_ROW_ID + 
+      '?alt=json-in-script&callback=currentStatusCallback';
 
     showSpinner(true);
     for (key in stationsInfo) {
@@ -295,7 +300,7 @@
 
     var script = document.createElement('script');
     script.setAttribute('type', 'text/javascript');
-    script.setAttribute('src', 'https://spreadsheets.google.com/feeds/list/0AoOjWPdv2TXodHlMTTFrakJKR2F6cldJTGktQnNXV0E/od6/public/basic?alt=json-in-script&callback=currentStatusCallback&start-index=' + CURRENT_STATUS_ROW + '&max-results=' + 1);
+    script.setAttribute('src', NEW_LINK);
     $('head').append(script);
 
     $('#station_ok').text('תחנה תקינה');

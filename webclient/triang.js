@@ -36,7 +36,8 @@ function calcTriang() {
 
 function populateMyLocation() {
   navigator.geolocation.getCurrentPosition(function(position) { 
-    $('#latlng').val(position.coords.latitude + ', ' + position.coords.longitude)
+    $('#latlng').val(position.coords.latitude + ', ' + position.coords.longitude);
+    $("#dist").val(position.coords.accuracy);
   }, null, {maximumAge: 5000});
 }
 
