@@ -529,7 +529,7 @@
         }
 		});
     google.maps.event.addListener(map, 'zoom_changed', function() {
-        var size = map.getZoom() > 14 ? 36 : 24;
+        var size = map.getZoom() <= 13 ? 18 : (map.getZoom <= 16 ? 24 : 36);
         if (oldSize == size) {
           return;  // no need to change the size of the icons.
         }
