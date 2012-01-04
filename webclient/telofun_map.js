@@ -296,6 +296,7 @@
         '<p>' + '<span style="border: solid 1px"><img src="greenbike.png" title="אופניים פנויים" />' + station.available_bikes + "</span>" +  
                 '&nbsp;&nbsp;<span style="border: solid 1px"><img src="docks.png" title="תחנות עגינה פנויות" />' + station.available_docks + '</span></p>'));
     }
+    popuplateStationDistanceTables();
     showSpinner(false);
     createStationRankingIFrame();
   }
@@ -400,6 +401,18 @@
     }
   }
 
+  function popuplateStationDistanceTables() {
+      $('#stationDistanceTable').html();
+      for (var i=0; i < Math.min(4, sortedStations.length); ++i) {
+        var station = sortedStations[i];
+        var line = $('<tr><td>' + station.displayName + 
+            '</td><td>' + stationsInfo[station.id].available_bikes +
+            '</td><td>' + stationsInfo[station.id].available_docks +
+            '</td><td>' + station.distance + '</td></tr>');
+        $('#stationDistanceTable').append(line);
+      }
+  }
+
   function prepareMap() {
     for (var id in stations) {
       getOrCreateStationInfo(id);
@@ -414,14 +427,6 @@
 		  sortedStations.sort(function(a,b) {
 		    return a.distance - b.distance;
 		  });
-      for (i in sortedStations) {
-        var station = sortedStations[i];
-        var line = $('<tr><td>' + station.displayName + 
-            '</td><td>' + stationsInfo[station.id].available_bikes +
-            '</td><td>' + stationsInfo[station.id].available_docks +
-            '</td><td>' + station.distance + '</td></tr>');
-        $('#stationDistanceTable').append(line);
-      }
     }
     resetInfoWindows();
     getCurrentStationsStatus();
