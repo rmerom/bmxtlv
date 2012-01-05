@@ -10,6 +10,9 @@
   html { height: 100% }
   body { height: 100%; margin: 0; padding: 0 }
   #map_canvas { height: 100% }
+  .stationInTable {}
+  .stationInTableName {  }
+  .stationInTableCell { cursor: pointer; border-bottom: solid 1px black; padding: 10px }
 </style>
 <script type="text/javascript"
     src="http://maps.googleapis.com/maps/api/js?language=iw&key=AIzaSyCU_8L_pZVpNdgGV2VNBKX0mwzt8txNtdc&sensor=true&libraries=geometry">
@@ -69,18 +72,24 @@
     <br/>
   </div>
   <div id='stationDistanceDiv' style='display: none'>
-  <table id='stationDistanceTable'>
+  <h3>
+  תחנות קרובות:
+
+  </h3>
+  <table id='stationDistanceTable' cellspacing="0" style='font-size: large; font-weight: none; border: 1px'>
     <tbody>
     </tbody>
   </table>
-<br/>
-<br/><br/>
+  <br/><br/>
+  <a href='javascript:showDiv("mapDiv")'>&lt;&lt; חזרה</a>
   </div>
   <div id='stationRankingDiv' style='display: none'>
-<br/>
-    הציון מראה (בקירוב) כמה אחוזים מהזמן התחנה תקינה (כלומר, לא חסרים בה אופניים או תחנות עגינה).
-<br/><br/>
-  <span id='stationRankPlaceholder'></span>
+  <table id='stationScoreTable' cellspacing="0" style='font-size: large; font-weight: none; border: 1px'>
+    <tbody>
+    </tbody>
+  </table>
+  <br/><br/>
+  <a href='javascript:showDiv("mapDiv")'>&lt;&lt; חזרה</a>
   </div>
 
 	</body>

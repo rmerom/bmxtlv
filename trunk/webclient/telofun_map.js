@@ -20,7 +20,9 @@
   var directionsRenderer = new google.maps.DirectionsRenderer();
   var namesLoaded = false;
   var locationsLoaded = false;
-  var sortedStations = [];
+  var bikeStatusLoaded = true;
+  var scoresLoaded = false;
+  var distanceSortedStations = [];
 
   function numericTimeToHumanTime(time) {
     var hour = String(Math.floor(time));
@@ -33,17 +35,17 @@
     $('#timeLabel').html(numericTimeToHumanTime(time));
   }
 
-  function getIntStatsFromFeed(rowFeed) {
+  function getFloatStatsFromFeed(rowFeed) {
     var result = {};
     var rowSplits = rowFeed.split(',');
     for (var i = 0; i < rowSplits.length; ++i) {
-      // one stat would be of the form " id204: 3" or  _6woj3: 375".
+      // one stat would be of the form " id204: 3"
       var oneStat = rowSplits[i];
       var id = oneStat.split(':')[0].replace(/^\s+/,'');  // skip spaces
       if (id.indexOf('id') != 0) {
         continue;
       }
-      var value = parseInt(oneStat.split(':')[1].replace(/^\s+/,''));  // skip spaces
+      var value = parseFloat(oneStat.split(':')[1].replace(/^\s+/,''));  // skip spaces
       result[id] = value;
     }
     return result;
@@ -66,29 +68,40 @@
   }
 
   function resetInfoWindows() {
-    for (key in stationsInfo) {
-      var station = stationsInfo[key];
+    for (id in stationsInfo) {
+      var station = stationsInfo[id];
       var content = "<span><h2 style='font-family: arial; color: blue'>" +
-          (stations[key] ? stations[key].displayName : "") + "</h2>";
-      content += "<a class='directions' style='display: none;' href='javascript:directionsTo(\"" + station.id + "\");'>מסלול לכאן</a>";
+          (stations[id] ? stations[id].displayName : "") + "</h2>";
+      content += "<a class='directions' style='display: none;' href='javascript:cycleTo(\"" + station.id + "\");'>מסלול לכאן</a>";
       content += "<span class='nodirections' style='font-size: x-small'>מיקומך אינו ידוע ליצירת מסלול</span>";
       content += '<br/></span>';
       station.infowindow.setContent($(content).get()[0]);
     }
   }
 
-  function directionsTo(destinationId) {
+  function cycleTo(destinationId) {
     var nearestId = findClosestStation();
     if (!nearestId) {
       alert('לא מצליח למצוא תחנה קרובה ביותר');
       return;
     }
-    showDirections(stations[nearestId].latLng, stations[destinationId].latLng);
+    showDirections(stations[destinationId].latLng, stations[nearestId].latLng);
   }
 
-  function showDirections(origin, destination) {
+  function walkTo(destinationId) {
+    showDiv('mapDiv');
+    showDirections(stations[destinationId].latLng);
+  }
+
+  function centerOn(id) {
+    showDiv('mapDiv');
+    map.setCenter(stations[id].latLng);
+    map.setZoom(Math.max(map.getZoom(), 17);
+  }
+
+  function showDirections(destination, waypoint) {
     var service = new google.maps.DirectionsService();
-    service.route({origin: origin, destination: destination, travelMode: google.maps.TravelMode.WALKING, unitSystem: google.maps.UnitSystem.METRIC},
+    service.route({origin: userPosition, destination: destination, travelMode: google.maps.TravelMode.WALKING, unitSystem: google.maps.UnitSystem.METRIC, waypoints: waypoint ? [{location: waypoint}] : undefined },
       function(result, status) {
         if (status != google.maps.DirectionsStatus.OK) {
           alert('בעיה בשליחת ההוראות');
@@ -110,8 +123,8 @@
     }
     var minDistance = Number.MAX_VALUE;
     var minId;
-  	for (key in stations) {
-      var station = stations[key];
+  	for (id in stations) {
+      var station = stations[id];
       var curDistance = google.maps.geometry.spherical.computeDistanceBetween(
           userPosition, station.latLng);
       if (curDistance < minDistance) {
@@ -127,20 +140,20 @@
     clearTimeout(timeUpdateTimeout);
     var stats = [];
     var allKeys = {};
-    var key;
+    var id;
     for (var i = 0; i < ROWS_PER_SAMPLE; ++i) {
-      stats[i] = getIntStatsFromFeed(value.feed.entry[i].content["$t"]);
-      for (key in stats[i]) {
-        allKeys[key] = {};
+      stats[i] = getFloatStatsFromFeed(value.feed.entry[i].content["$t"]);
+      for (id in stats[i]) {
+        allKeys[id] = {};
       }
     }
-    for (key in allKeys) {
+    for (id in allKeys) {
       var sum = 0;
       var notEnoughBikes = 0;
       var notEnoughDocks = 0;
       for (var i = 0; i < stats.length; ++i) {
-        if (key in stats[i]) {
-          var value = stats[i][key];
+        if (id in stats[i]) {
+          var value = stats[i][id];
           sum += value;
           switch (i) {
             case 1:  // no bikes
@@ -164,7 +177,7 @@
       var isNotEnoughBikes = (notEnoughBikes / sum > RATIO_PROBLEM);
       var isNotEnoughDocks = (notEnoughDocks / sum > RATIO_PROBLEM);
       if (isNotEnoughBikes) {
-        image = 'nobikes.png';
+        image = 'nobikes_0.png';
         statsArray.push(
     'ב- ' + Math.round(notEnoughBikes / sum * 100) + '% מהמקרים לא היו אופניים');
       }
@@ -185,15 +198,15 @@
       }
       statsContent += statsArray.join(" ו");
 
-      var station = stationsInfo[key];
-      changeMarkerUrl(marker, image);
+      var station = stationsInfo[id];
+      changeMarkerUrl(station.marker, image);
       var content = (statsContent != "") ? (statsContent + " בשעה זו") : "";
-      $(station.infowindow.getContent()).append($(content));
+      $(station.infowindow.getContent()).append($("<br/><span>"+content+"</span>"));
     }
     // Turn all unknown stations into a question mark.
-    for (key in stations) {
-      if (!(key in allKeys)) {
-        changeMarkerUrl(stationsInfo[key].marker, 'dunno.png'); 
+    for (id in stations) {
+      if (!(id in allKeys)) {
+        changeMarkerUrl(stationsInfo[id].marker, 'dunno.png'); 
       }
     }
     showSpinner(false);
@@ -238,7 +251,7 @@
     var marker = new google.maps.Marker({
         position: stations[id] ? stations[id].latLng : undefined,
         title: stations[id] ? stations[id].displayName : undefined,
-        icon: new google.maps.MarkerImage('nono.jpg')
+        icon: new google.maps.MarkerImage('spinner.gif')
     });
     station.marker = marker;
     marker.setMap(map);
@@ -269,19 +282,31 @@
         setTimeout(onSetMapTitle, 
             new Date(lastUpdateTime.getTime() + 6.1 /* mins */ * 60 * 1000 - new Date().getTime()));
     resetInfoWindows();
-    currentStatus = getIntStatsFromFeed(value.entry.content["$t"]);
-    for (key in currentStatus) {
-      var status = currentStatus[key];
-      var station = getOrCreateStationInfo(key);
+    currentStatus = getFloatStatsFromFeed(value.entry.content["$t"]);
+    for (id in currentStatus) {
+      var status = currentStatus[id];
+      var station = getOrCreateStationInfo(id);
       
       station.available_bikes = status % 100;
       station.available_docks = Math.floor(status / 100);
       if (station.stats) {
         delete station["stats"];
       }
+    }
+    showSpinner(false);
+    bikeStatusLoaded = true;
+    maybeUpdateStationsUI();
+    maybeUpdateDistanceSortedStations();
+  }
 
+  function maybeUpdateStationsUI() {
+    if (!namesLoaded || !locationsLoaded || !bikeStatusLoaded) {
+      return;
+    }
+    for (id in stations) {
+      var station = stationsInfo[id];
       var image;
-      if (status == 0) {
+      if (station.available_bikes == 0 && station.available_docks == 0) {
         image = 'dunno.png';
       } else if (station.available_bikes in [0,1,2]) {
         image = 'nobikes_' + station.available_bikes + '.png';
@@ -291,14 +316,12 @@
         image = 'greenbike.png';
       }
       changeMarkerUrl(station.marker, image);
-      station.marker.setTitle(station.displayName + ', אופניים: ' + station.available_bikes + ' תחנות: ' + station.available_docks);
+      station.marker.setTitle(stations[id].displayName + ', אופניים: ' + station.available_bikes + ' תחנות: ' + station.available_docks);
       $(station.infowindow.getContent()).append($( 
         '<p>' + '<span style="border: solid 1px"><img src="greenbike.png" title="אופניים פנויים" />' + station.available_bikes + "</span>" +  
                 '&nbsp;&nbsp;<span style="border: solid 1px"><img src="docks.png" title="תחנות עגינה פנויות" />' + station.available_docks + '</span></p>'));
     }
-    popuplateStationDistanceTables();
-    showSpinner(false);
-    createStationRankingIFrame();
+    getStationRanking();
   }
 
   function createStationRankingIFrame() {
@@ -308,23 +331,15 @@
   }
 
   function getCurrentStationsStatus() {
-    var CURRENT_STATUS_ROW = 484 - 1;
-    var OLD_LINK = 'https://spreadsheets.google.com/feeds/list/0AoOjWPdv2TXodHlMTTFrakJKR2F6cldJTGktQnNXV0E/od6/public/basic?alt=json-in-script&callback=currentStatusCallback&start-index=' + CURRENT_STATUS_ROW + '&max-results=' + 1;
     var CURRENT_STATUS_ROW_ID = '25ncrc';
-    var NEW_LINK = 'https://spreadsheets.google.com/feeds/list/0AoOjWPdv2TXodHlMTTFrakJKR2F6cldJTGktQnNXV0E/od6/public/basic/' + CURRENT_STATUS_ROW_ID + 
-      '?alt=json-in-script&callback=currentStatusCallback';
+    readRowFromSpreadsheet(CURRENT_STATUS_ROW_ID, 'currentStatusCallback');
 
     showSpinner(true);
-    for (key in stationsInfo) {
-      if (stationsInfo[key].marker) {
-        changeMarkerUrl(stationsInfo[key].marker, 'spinner.gif'); 
+    for (id in stationsInfo) {
+      if (stationsInfo[id].marker) {
+        changeMarkerUrl(stationsInfo[id].marker, 'spinner.gif'); 
       }
     }
-
-    var script = document.createElement('script');
-    script.setAttribute('type', 'text/javascript');
-    script.setAttribute('src', NEW_LINK);
-    $('head').append(script);
 
     $('#station_ok').text('תחנה תקינה');
     $('#station_nobikes').text('אין אופניים');
@@ -338,8 +353,8 @@
     }
     var baseRow = START_ROW + ROWS_PER_SAMPLE * time * 4 - 1;  // first row considered headers
 
-    for (key in stations) {
-      changeMarkerUrl(stationsInfo[key].marker, 'spinner.gif');
+    for (id in stations) {
+      changeMarkerUrl(stationsInfo[id].marker, 'spinner.gif');
     }
     showSpinner(true);
     var script = document.createElement('script');
@@ -375,7 +390,7 @@
     }
     locationsLoaded = true;
     if (namesLoaded) {
-      prepareMap();
+      maybePrepareMap();
     }
   }
 
@@ -397,39 +412,62 @@
     }
     namesLoaded = true;
     if (locationsLoaded) {
-      prepareMap();
+      maybePrepareMap();
     }
   }
 
-  function popuplateStationDistanceTables() {
-      $('#stationDistanceTable').html();
-      for (var i=0; i < Math.min(4, sortedStations.length); ++i) {
-        var station = sortedStations[i];
-        var line = $('<tr><td>' + station.displayName + 
-            '</td><td>' + stationsInfo[station.id].available_bikes +
-            '</td><td>' + stationsInfo[station.id].available_docks +
-            '</td><td>' + station.distance + '</td></tr>');
+  function populateStationDistanceTable() {
+      $('#stationDistanceTable').html("");
+      for (var i=0; i < Math.min(4, distanceSortedStations.length); ++i) {
+        var station = distanceSortedStations[i];
+        var line = $('<tr class="stationInTable" onclick="javascript:walkTo(\'' + station.id +'\')">' +
+            '<td class = "stationInTableName stationInTableCell">' + station.displayName + 
+            '</td><td class = "stationInTableCell"><img src="greenbike.png" width="17" height="17" />' + stationsInfo[station.id].available_bikes +
+            '</td><td class ="stationInTableCell"><img src="docks.png" width="17" height="17" />' + stationsInfo[station.id].available_docks +
+            '</td><td class="stationInTableCell"><img src="walk.gif" width="17" height="17" />' + station.distance + ' מ\'</td></tr>');
         $('#stationDistanceTable').append(line);
       }
   }
 
-  function prepareMap() {
+  function populateStationScoresTable(scoreSortedStations) {
+    $('#stationScoreTable').html("");
+    for (var i = 0; i < scoreSortedStations.length; ++i) {
+      var station = scoreSortedStations[i];
+      var line = $('<tr class="stationInScoreTable" onclick="javascript:centerOn(\'' + station.id +'\')">' +
+          '<td class = "stationInTableName stationInTableCell">' + station.displayName + 
+          '</td><td class = "stationInTableCell">' + station.score +
+          '</td></td></tr>');
+      $('#stationScoreTable').append(line);
+    }
+  }
+
+  function maybeUpdateDistanceSortedStations() {
+    if (!namesLoaded || !locationsLoaded || !bikeStatusLoaded || !userPosition) {
+      return;
+    }
+    distanceSortedStations = [];
+    for (var id in stations) {
+      var station = stations[id];
+      station.distance = Math.round(google.maps.geometry.spherical.computeDistanceBetween(
+	        userPosition, station.latLng));
+      distanceSortedStations.push(station);
+    }
+	  distanceSortedStations.sort(function(a,b) {
+	    return a.distance - b.distance;
+	  });
+    populateStationDistanceTable();
+  }
+
+  function maybePrepareMap() {
+    if (!namesLoaded || !locationsLoaded) {
+      return;
+    }
     for (var id in stations) {
       getOrCreateStationInfo(id);
-      sortedStations.push(stations[id]);
     }
-    if (userPosition) {
-      for (i in sortedStations) {
-        var station = sortedStations[i];
-        station.distance = Math.round(google.maps.geometry.spherical.computeDistanceBetween(
-		        userPosition, station.latLng));
-      }
-		  sortedStations.sort(function(a,b) {
-		    return a.distance - b.distance;
-		  });
-    }
+    maybeUpdateStationsUI();
+    maybeUpdateDistanceSortedStations();
     resetInfoWindows();
-    getCurrentStationsStatus();
   }
 
 
@@ -464,6 +502,7 @@
             if (map.getZoom() < 15) {
               map.setZoom(15);
             }
+            maybeUpdateDistanceSortedStations();
           } else {  // userPosition is outside TLV
             map.fitBounds(tlvBounds);
             userPosition = null;
@@ -488,21 +527,9 @@
   function loadStationsFromWeb() {
     var LOCATIONS_ROW_ID = '205aqv';
     var NAMES_ROW_ID = 'cn6ca';
-    var NEW_LINK_LOCATIONS = 'https://spreadsheets.google.com/feeds/list/0AoOjWPdv2TXodHlMTTFrakJKR2F6cldJTGktQnNXV0E/od6/public/basic/' + LOCATIONS_ROW_ID + 
-      '?alt=json-in-script&callback=stationLocationsCallback';  // does not work yet - retrieves only 
-    var NEW_LINK_NAMES = 'https://spreadsheets.google.com/feeds/list/0AoOjWPdv2TXodHlMTTFrakJKR2F6cldJTGktQnNXV0E/od6/public/basic/' + NAMES_ROW_ID + 
-      '?alt=json-in-script&callback=stationNamesCallback';  // does not work yet - retrieves only 
 
-    var script;
-    script = document.createElement('script');
-    script.setAttribute('type', 'text/javascript');
-    script.setAttribute('src', NEW_LINK_LOCATIONS);
-    $('head').append(script);
-
-    script = document.createElement('script');
-    script.setAttribute('type', 'text/javascript');
-    script.setAttribute('src', NEW_LINK_NAMES);
-    $('head').append(script);
+    readRowFromSpreadsheet(LOCATIONS_ROW_ID, 'stationLocationsCallback');
+    readRowFromSpreadsheet(NAMES_ROW_ID, 'stationNamesCallback');
     getCurrentStationsStatus();
   }
 
@@ -556,16 +583,21 @@
     imageDiv.css({'float':'right'});
 
     var refreshImg = $('<img>');
-    refreshImg.attr({'src': 'refresh.png', 'width': '20', 'height': '20', 'title':'רענן'});
-    refreshImg.css({ 'vertical-align': 'middle', 'padding-left': '1px', 'padding-right': '1px', 'border-left': 'solid black 1px'});
+    refreshImg.attr({'src': 'refresh.png', 'width': '21', 'height': '21', 'title':'רענן'});
+    refreshImg.css({ 'vertical-align': 'middle', 'padding': '1px', 'border-left': 'solid black 1px'});
     refreshImg.click(getCurrentStationsStatus);
 
     var myLocImg = $('<img>');
-    myLocImg.attr({'src': 'myloc.png', 'width': '20', 'height': '20', 'title':'המקום שלי'});
-    myLocImg.css({ 'vertical-align': 'middle', 'padding-left': '1px', 'padding-right': '1px', 'border-left': 'solid black 1px'});
+    myLocImg.attr({'src': 'myloc.png', 'width': '21', 'height': '21', 'title':'המקום שלי'});
+    myLocImg.css({ 'vertical-align': 'middle', 'padding': '1px', 'border-left': 'solid black 1px'});
     myLocImg.click(function() { getUserLocation() });
 
-    imageDiv.append(refreshImg, myLocImg);
+    var listImg = $('<img>');
+    listImg.attr({'src': 'list.png', 'width': '21', 'height': '21', 'title':'תחנות קרובות'});
+    listImg.css({ 'vertical-align': 'middle', 'padding': '1px', 'border-left': 'solid black 1px'});
+    listImg.click(function() { showDiv('stationDistanceDiv') });
+
+    imageDiv.append(refreshImg, myLocImg, listImg);
 
 		var myTextDiv = $('<div>');
 		myTextDiv.css({'background': 'white', 'opacity': 0.7, 'width': '190px', 'height' : '20px', 'border': 'solid black 1px', 'padding': '5px', 'text-align': 'center' });
@@ -585,4 +617,39 @@ function adjustForSmallScreen() {
      $('#mapTd').width('100%');
      $('#lowerText').remove();
   }
+}
+
+function readRowFromSpreadsheet(lineId, callback) {
+  var link = 
+      'https://spreadsheets.google.com/feeds/list/0AoOjWPdv2TXodHlMTTFrakJKR2F6cldJTGktQnNXV0E/od6/public/basic/' + 
+      lineId + '?alt=json-in-script&callback=' + callback;
+  var script = $('<script>');
+  script.attr({type: 'text/javascript', src: link});
+  $('head').append(script);
+}
+
+function stationRankingCallback(stationsInfo) {
+  // stationNames is of the form:
+  // id202: 0.923, id115: 0.115, ....
+  var scoresString = stationsInfo.entry.content["$t"];  
+  var scores = getFloatStatsFromFeed(scoresString);
+
+  var scoreSortedStations = [];
+  for (var id in scores) {
+    stations[id].score = Math.round(scores[id] * 100 * 10) / 10;  // Percent, rounded to promiles.
+    scoreSortedStations.push(stations[id]);
+  }
+  scoreSortedStations.sort(function(a,b) {
+    return b.score - a.score;
+  });
+  populateStationScoresTable(scoreSortedStations);
+}
+
+function getStationRanking() {
+  if (scoresLoaded) {
+    return;
+  }
+  scoresLoaded = true;
+  var STATION_RANKING_ROW_ID = '20ax0j';
+  readRowFromSpreadsheet(STATION_RANKING_ROW_ID, 'stationRankingCallback');
 }
