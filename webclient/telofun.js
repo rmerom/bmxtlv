@@ -96,7 +96,7 @@
   function centerOn(id) {
     showDiv('mapDiv');
     map.setCenter(stations[id].latLng);
-    map.setZoom(Math.max(map.getZoom(), 17);
+    map.setZoom(Math.max(map.getZoom(), 17));
   }
 
   function showDirections(destination, waypoint) {
