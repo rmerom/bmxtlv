@@ -80,7 +80,7 @@
   }
 
   function cycleTo(destinationId) {
-    var nearestId = findClosestStation();
+    var nearestId = findClosestAvailableStation();
     if (!nearestId) {
       alert('לא מצליח למצוא תחנה קרובה ביותר');
       return;
@@ -117,13 +117,16 @@
     );
   }
 
-  function findClosestStation() {
+  function findClosestAvailableStation() {
     if (!userPosition) {
       return null;
     }
     var minDistance = Number.MAX_VALUE;
     var minId;
   	for (id in stations) {
+      if (!stationsInfo[id] || !stationsInfo[id].available_bikes) {
+        continue;
+      }
       var station = stations[id];
       var curDistance = google.maps.geometry.spherical.computeDistanceBetween(
           userPosition, station.latLng);
@@ -539,6 +542,7 @@
     var latlng = new google.maps.LatLng(32.066792, 34.777694);  // Merkaz Tel Aviv
     var mapOptions = {
       zoom: 16,
+      minZoom: 10,
       center: latlng,
       mapTypeControl: false,
       scaleControl: true,
@@ -555,6 +559,22 @@
           openInfoWindow = null;
         }
 		});
+
+    google.maps.event.addListener(map, 'bounds_changed', function() {
+        var bounds = map.getBounds();
+        for (id in stations) {
+          if (!stationsInfo[id] || !(stationsInfo[id].marker)) {
+            continue;
+          }
+          var marker = stationsInfo[id].marker;
+          var isVisible = marker.getVisible();
+          var shouldBeVisible = bounds.contains(stations[id].latLng);
+          if (isVisible != shouldBeVisible) {
+            marker.setVisible(shouldBeVisible);
+          }
+        }
+    });
+
     google.maps.event.addListener(map, 'zoom_changed', function() {
         var size = map.getZoom() <= 13 ? 18 : (map.getZoom <= 16 ? 24 : 36);
         if (oldSize == size) {
