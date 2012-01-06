@@ -39,7 +39,7 @@
     var result = {};
     var rowSplits = rowFeed.split(',');
     for (var i = 0; i < rowSplits.length; ++i) {
-      // one stat would be of the form " id204: 3"
+      // one stat would be of the form ' id204: 3'
       var oneStat = rowSplits[i];
       var id = oneStat.split(':')[0].replace(/^\s+/,'');  // skip spaces
       if (id.indexOf('id') != 0) {
@@ -55,7 +55,7 @@
     var result = {};
     var rowSplits = rowFeed.split(',');
     for (var i = 0; i < rowSplits.length; ++i) {
-      // one stat would be of the form " id204: 3" or  _6woj3: 375".
+      // one stat would be of the form ' id204: 3' or  _6woj3: 375'.
       var oneStat = rowSplits[i];
       var id = oneStat.split(':')[0].replace(/^\s+/,'');  // skip spaces
       if (id.indexOf('id') != 0) {
@@ -67,15 +67,23 @@
     return result;
   }
 
+  function createInfoWindow() {
+    return $("<span><h2 style='font-family: arial; color: blue'><span id='stationName'></span></h2><a id='directions' class='directions'>מסלול לכאן</a><span class='nodirections' style='font-size: x-small; display: none; ' id='nodirections'>מיקומך אינו ידוע ליצירת מסלול</span><br><p><span style='border: solid 1px'><img src='greenbike.png' title='אופניים פנויים' ><span id='available_bikes'></span></span>&nbsp;&nbsp;<span style='border: solid 1px'><img src='docks.png' title='תחנות עגינה פנויות' ><span id='available_docks'> </span></span></p></span>").get()[0];
+  }
+
   function resetInfoWindows() {
     for (id in stationsInfo) {
       var station = stationsInfo[id];
-      var content = "<span><h2 style='font-family: arial; color: blue'>" +
-          (stations[id] ? stations[id].displayName : "") + "</h2>";
-      content += "<a class='directions' style='display: none;' href='javascript:cycleTo(\"" + station.id + "\");'>מסלול לכאן</a>";
-      content += "<span class='nodirections' style='font-size: x-small'>מיקומך אינו ידוע ליצירת מסלול</span>";
-      content += '<br/></span>';
-      station.infowindow.setContent($(content).get()[0]);
+/*      var content = '<span><h2 style='font-family: arial; color: blue'>' +
+          (stations[id] ? stations[id].displayName : '') + '</h2>';
+      content += '<a class='directions' style='display: none;' href='javascript:cycleTo(\'' + station.id + '\');'>מסלול לכאן</a>';
+      content += '<span class='nodirections' style='font-size: x-small'>מיקומך אינו ידוע ליצירת מסלול</span>';
+      content += '<br/></span>';*/
+      var content = $(station.infowindow.getContent());
+      content.find('#stationName').text(stations[id].displayName);
+      content.find('#directions').attr('href', 'javascript:cycleTo(\'' + id + '\')');
+      content.find('#available_bikes').text(station.available_bikes);
+      content.find('#available_docks').text(station.available_docks);
     }
   }
 
@@ -139,13 +147,12 @@
   }
 
   function timelyCallback(value) {
-    resetInfoWindows();
     clearTimeout(timeUpdateTimeout);
     var stats = [];
     var allKeys = {};
     var id;
     for (var i = 0; i < ROWS_PER_SAMPLE; ++i) {
-      stats[i] = getFloatStatsFromFeed(value.feed.entry[i].content["$t"]);
+      stats[i] = getFloatStatsFromFeed(value.feed.entry[i].content['$t']);
       for (id in stats[i]) {
         allKeys[id] = {};
       }
@@ -175,7 +182,7 @@
         }
       }
       var image = 'greenbike.png';
-      var statsContent = "";
+      var statsContent = '';
       var statsArray = [];
       var isNotEnoughBikes = (notEnoughBikes / sum > RATIO_PROBLEM);
       var isNotEnoughDocks = (notEnoughDocks / sum > RATIO_PROBLEM);
@@ -199,12 +206,12 @@
       if (sum == 0 || (isNotEnoughBikes && isNotEnoughDocks)) {
         image = 'dunno.png';
       }
-      statsContent += statsArray.join(" ו");
+      statsContent += statsArray.join(' ו');
 
       var station = stationsInfo[id];
       changeMarkerUrl(station.marker, image);
-      var content = (statsContent != "") ? (statsContent + " בשעה זו") : "";
-      $(station.infowindow.getContent()).append($("<br/><span>"+content+"</span>"));
+      var content = (statsContent != '') ? (statsContent + ' בשעה זו') : '';
+      $(station.infowindow.getContent()).append($('<br/><span>'+content+'</span>'));
     }
     // Turn all unknown stations into a question mark.
     for (id in stations) {
@@ -225,10 +232,10 @@
   }
 
   function formatTime(updated) {
-    var result = " ";
+    var result = ' ';
     var now = new Date();
     if (now.getTime() - updated.getTime() < 6 /* mins */ * 60 * 1000) {
-      return "עכשיו";
+      return 'עכשיו';
     }
     result += updated.format('HH:MM');
     if (updated.format('d/m') != now.format('d/m')) {
@@ -258,7 +265,7 @@
     });
     station.marker = marker;
     marker.setMap(map);
-    var infowindow = new google.maps.InfoWindow({});
+    var infowindow = new google.maps.InfoWindow({content: createInfoWindow()});
     station.infowindow = infowindow;
     google.maps.event.addListener(marker, 'click', function(marker,infowindow) {
       return function() {
@@ -266,8 +273,8 @@
           openInfoWindow.close();
         }
         var showDirections = (userPosition != null);
-        $(infowindow.content).find('.directions').toggle(showDirections);
-        $(infowindow.content).find('.nodirections').toggle(!showDirections);
+        $(infowindow.getContent()).find('.directions').toggle(showDirections);
+        $(infowindow.getContent()).find('.nodirections').toggle(!showDirections);
         infowindow.open(map, marker);
         openInfoWindow = infowindow;
       }
@@ -276,7 +283,7 @@
   }
 
   function currentStatusCallback(value) {
-      lastUpdateTime = new Date(value.entry.updated["$t"]);
+      lastUpdateTime = new Date(value.entry.updated['$t']);
     onSetMapTitle(); 
     if (timeUpdateTimeout) {
       clearTimeout(timeUpdateTimeout);
@@ -284,8 +291,7 @@
     timeUpdateTimeout = 
         setTimeout(onSetMapTitle, 
             new Date(lastUpdateTime.getTime() + 6.1 /* mins */ * 60 * 1000 - new Date().getTime()));
-    resetInfoWindows();
-    currentStatus = getFloatStatsFromFeed(value.entry.content["$t"]);
+    currentStatus = getFloatStatsFromFeed(value.entry.content['$t']);
     for (id in currentStatus) {
       var status = currentStatus[id];
       var station = getOrCreateStationInfo(id);
@@ -293,11 +299,12 @@
       station.available_bikes = status % 100;
       station.available_docks = Math.floor(status / 100);
       if (station.stats) {
-        delete station["stats"];
+        delete station['stats'];
       }
     }
     showSpinner(false);
     bikeStatusLoaded = true;
+    resetInfoWindows();
     maybeUpdateStationsUI();
     maybeUpdateDistanceSortedStations();
   }
@@ -320,9 +327,6 @@
       }
       changeMarkerUrl(station.marker, image);
       station.marker.setTitle(stations[id].displayName + ', אופניים: ' + station.available_bikes + ' תחנות: ' + station.available_docks);
-      $(station.infowindow.getContent()).append($( 
-        '<p>' + '<span style="border: solid 1px"><img src="greenbike.png" title="אופניים פנויים" />' + station.available_bikes + "</span>" +  
-                '&nbsp;&nbsp;<span style="border: solid 1px"><img src="docks.png" title="תחנות עגינה פנויות" />' + station.available_docks + '</span></p>'));
     }
     getStationRanking();
   }
@@ -375,7 +379,7 @@
   function stationLocationsCallback(stationsInfo) {
     // longLats of the form:
     // id202: 32.122; 34.818, id112: 32.113; 34.801, ....
-    var longLatsString = stationsInfo.entry.content["$t"];  
+    var longLatsString = stationsInfo.entry.content['$t'];  
     var longLats = getStringStatsFromFeed(longLatsString);
 
     for (var id in longLats) {
@@ -400,7 +404,7 @@
   function stationNamesCallback(stationsInfo) {
     // stationNames is of the form:
     // id202: אהרון בקר 15, id112: אונברסיטה איינשטיין 78, ...
-    var namesString = stationsInfo.entry.content["$t"];  
+    var namesString = stationsInfo.entry.content['$t'];  
     var names = getStringStatsFromFeed(namesString);
 
     for (var id in names) {
@@ -420,26 +424,26 @@
   }
 
   function populateStationDistanceTable() {
-      $('#stationDistanceTable').html("");
+      $('#stationDistanceTable').html('');
       for (var i=0; i < Math.min(4, distanceSortedStations.length); ++i) {
         var station = distanceSortedStations[i];
-        var line = $('<tr class="stationInTable" onclick="javascript:walkTo(\'' + station.id +'\')">' +
-            '<td class = "stationInTableName stationInTableCell">' + station.displayName + 
-            '</td><td class = "stationInTableCell"><img src="greenbike.png" width="17" height="17" />' + stationsInfo[station.id].available_bikes +
-            '</td><td class ="stationInTableCell"><img src="docks.png" width="17" height="17" />' + stationsInfo[station.id].available_docks +
-            '</td><td class="stationInTableCell"><img src="walk.gif" width="17" height="17" />' + station.distance + ' מ\'</td></tr>');
+        var line = $("<tr class='stationInTable' onclick='javascript:walkTo(\"" + station.id +"\")'>" +
+            "<td class = 'stationInTableName stationInTableCell'>" + station.displayName + 
+            "</td><td class = 'stationInTableCell'><img src='greenbike.png' width='17' height='17' />" + stationsInfo[station.id].available_bikes +
+            "</td><td class ='stationInTableCell'><img src='docks.png' width='17' height='17' />" + stationsInfo[station.id].available_docks +
+            "</td><td class='stationInTableCell'><img src='walk.gif' width='17' height='17' />" + station.distance + ' מ\'</td></tr>');
         $('#stationDistanceTable').append(line);
       }
   }
 
   function populateStationScoresTable(scoreSortedStations) {
-    $('#stationScoreTable').html("");
+    $('#stationScoreTable').html('');
     for (var i = 0; i < scoreSortedStations.length; ++i) {
       var station = scoreSortedStations[i];
-      var line = $('<tr class="stationInScoreTable" onclick="javascript:centerOn(\'' + station.id +'\')">' +
-          '<td class = "stationInTableName stationInTableCell">' + station.displayName + 
-          '</td><td class = "stationInTableCell">' + station.score +
-          '</td></td></tr>');
+      var line = $("<tr class='stationInScoreTable' onclick='javascript:centerOn(\'' + station.id +'\')'>" +
+          "<td class = 'stationInTableName stationInTableCell'>" + station.displayName + 
+          "</td><td class = 'stationInTableCell'>" + station.score +
+          "</td></td></tr>");
       $('#stationScoreTable').append(line);
     }
   }
@@ -551,7 +555,7 @@
       zoomControl: true,
       mapTypeId: google.maps.MapTypeId.ROADMAP
     };
-    map = new google.maps.Map(document.getElementById("map_canvas"),
+    map = new google.maps.Map(document.getElementById('map_canvas'),
         mapOptions);
     google.maps.event.addListener(map, 'click', function() {
         if (openInfoWindow) {
@@ -651,7 +655,7 @@ function readRowFromSpreadsheet(lineId, callback) {
 function stationRankingCallback(stationsInfo) {
   // stationNames is of the form:
   // id202: 0.923, id115: 0.115, ....
-  var scoresString = stationsInfo.entry.content["$t"];  
+  var scoresString = stationsInfo.entry.content['$t'];  
   var scores = getFloatStatsFromFeed(scoresString);
 
   var scoreSortedStations = [];
