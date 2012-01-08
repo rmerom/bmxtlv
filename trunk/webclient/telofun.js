@@ -27,6 +27,8 @@
   var bikeStatusLoaded = true;
   var scoresLoaded = false;
   var distanceSortedStations = [];
+  var scoreSortedStations = [];
+
 
   function numericTimeToHumanTime(time) {
     var hour = String(Math.floor(time));
@@ -100,10 +102,18 @@
     showDirections(stations[destinationId].latLng);
   }
 
-  function centerOn(id) {
+  function showScoresAndCenterOn(id) {
     showDiv('mapDiv');
+    var numStations = scoreSortedStations.length;
+    for (var i = 0; i < numStations; ++i) {
+      var station = scoreSortedStations[i];
+      var marker = stationsInfo[station.id].marker;
+      var file = (i <= numStations * 0.25 ? 'green.png' : (i <= 0.75 * numStations ? 'yellow.gif': 'red.gif'));
+      marker.setIcon(new google.maps.MarkerImage(file, new google.maps.Size(20, 20)));
+    }
     map.setCenter(stations[id].latLng);
     map.setZoom(Math.max(map.getZoom(), 17));
+    setMapTitle('תחנות טובות, תחנות רעות');
   }
 
   function showDirections(destination, waypoint) {
@@ -465,8 +475,17 @@
   function populateStationScoresTable(scoreSortedStations) {
     $('#stationScoreTable').html('');
     for (var i = 0; i < scoreSortedStations.length; ++i) {
+      var img = null;
+      if (i == 0) {
+        img = 'green.png';
+      } else if (i == Math.round(0.25 * scoreSortedStations.length)) {
+        img = 'yellow.gif';
+      } else if (i == Math.round(0.75 * scoreSortedStations.length)) {
+        img = 'red.gif';
+      }
       var station = scoreSortedStations[i];
-      var line = $("<tr class='stationInScoreTable' onclick='javascript:centerOn(&apos;" + station.id +"&apos;)'>" +
+      var line = $("<tr class='stationInScoreTable' onclick='javascript:showScoresAndCenterOn(&apos;" + station.id +"&apos;)'>" +
+          "<td>" + (img ? '<img width=25 height=25 src="' + img + '"/>' : '') + '</td>' +
           "<td class = 'stationInTableName stationInTableCell'>" + station.displayName + 
           "</td><td class = 'stationInTableCell'>" + station.score +
           "</td></td></tr>");
@@ -508,7 +527,9 @@
     var title = $('#mapTitle');
     title.text(titleString);
  
-    title.css('font-size', title.length <= 12 ? 'medium' : 'small');
+    title.css('font-size', titleString.length <= 12 
+        ? 'medium' 
+        : (titleString.length <= 18 ? 'small' : 'x-small'));
   }
 
   function showSpinner(show) {
@@ -553,7 +574,7 @@
   }
 
   function showDiv(whatToShow) {
-    var divs = ['loadingDiv', 'mapDiv', 'stationRankingDiv', 'stationDistanceDiv'];
+    var divs = ['loadingDiv', 'mapDiv', 'stationRankingDiv', 'aboutDiv', 'stationDistanceDiv'];
     for (i in divs) {
       var div = divs[i];
       $('#' + div).toggle(whatToShow == div);
@@ -632,8 +653,7 @@
     getUserLocation();
 
 		var mapTitle = $('<div>');
-		mapTitle.css({'color': 'black', 'font-weight': 'bold', 'font-size': 'medium', 'width': '180px', 
-        'cursor': 'pointer'});
+		mapTitle.css({'color': 'black', 'font-weight': 'bold', 'font-size': 'medium', 'width': '180px' });
 		mapTitle.attr('id', 'mapTitle');
     mapTitle.click(getCurrentStationsStatus);
 
@@ -659,7 +679,7 @@
     imageDiv.append(myLocImg, listImg);
 
 		var myTextDiv = $('<div>');
-		myTextDiv.css({'background': 'white', 'opacity': 0.7, 'width': '190px', 'height' : '20px', 'border': 'solid black 1px', 'padding': '5px', 'text-align': 'center' });
+		myTextDiv.css({'background': 'white', 'opacity': 0.7, 'width': '190px', 'height' : '20px', 'border': 'solid black 1px', 'padding': '5px', 'text-align': 'center', 'cursor': 'pointer' });
 		var spinner = $('<img>');
 		spinner.attr({'src': 'spinner.gif', 'id': 'spinner', 'height': '19px', 'width': '19px'});
     myTextDiv.append(refreshImg, imageDiv, mapTitle, spinner);
@@ -673,7 +693,7 @@ function adjustToScreenSize() {
   if (screen.availWidth > 800) {
      $('#legend').show();
      $('#upperBar').show();
-     $('#mainTable').height('70%');
+     $('#mainTable').height('75%');
      $('#mapTd').width('80%');
      $('#lowerText').show();
   }
@@ -694,7 +714,7 @@ function stationRankingCallback(stationsInfo) {
   var scoresString = stationsInfo.entry.content['$t'];  
   var scores = getFloatStatsFromFeed(scoresString);
 
-  var scoreSortedStations = [];
+  scoreSortedStations = [];
   for (var id in scores) {
     stations[id].score = Math.round(scores[id] * 100 * 10) / 10;  // Percent, rounded to promiles.
     scoreSortedStations.push(stations[id]);
@@ -736,6 +756,11 @@ function search() {
 
 function togglePrediction() {
   $('#prediction').toggle();
+//  alert ('display is ' + $('#prediction').css('display') + ', type is ' + $('#hour').get()[.attr('type'));
+  if ($('#prediction').css('display') != 'none' && $('#hour').get()[0].type != 'range') {
+    alert('הדפדפן שלך לא חדש מספיק ואינו תומך בתכונות הנדרשות לתחזית. על מנת לראות תחזית מומלץ להשתמש בדפדפן חדש כמו כרום של גוגל');
+    $('#prediction').hide();
+  }
 }
 
 function hidePrediction() {

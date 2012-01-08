@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>תל או פן</title>
+<title>TelOFast</title>
 <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
 <meta name = "viewport" content = "initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0">
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
@@ -35,9 +35,10 @@
 </head>
 <body onload="initialize()" dir="rtl" style='font-family: arial; padding: 5px'>
   <span id='upperBar' style='display:none'>
-    <a href='javascript:showDiv("mapDiv");'>מפה</a>
-    <a href='javascript:showDiv("stationDistanceDiv");'>תחנות קרובות</a>
+    <a href='javascript:showDiv("aboutDiv");'>אודות</a>
     <a href='javascript:showDiv("stationRankingDiv");'>ציוני תחנות</a>
+    <a href='javascript:showDiv("mapDiv");'>מפה</a>
+    <a href='mailto:bikes@telofast.com;'>כיתבו לנו</a>
   </span>
   <div id='mapDiv' style='height: 100%;'>	
 		<table id='mainTable' style="width: 100%; height: 100%" role="presentation">
@@ -100,6 +101,22 @@
   </table>
   <br/><br/>
   <a href='javascript:showDiv("mapDiv")'>&lt;&lt; חזרה</a>
+  </div>
+  <div id='aboutDiv' style='display: none; width: 600px'>
+    <h1>אז מה זה פה?</h1>
+  <br/> 
+  <span style='font-weight: normal; font-family:arial;'>
+		<p> אנחנו משתמשי <a href='http://www.tel-o-fun.co.il'>תל אופן</a>, בדיוק כמוכם. טוב, אולי קצת יותר גיקים. </p>
+		<p> רצינו לבנות אתר שייתן מידע לגבי איפה יש ואיפה אין אופניים כרגע, איך להגיע ממקום למקום, ובאופן
+		  כללי - אילו תחנות טובות ואילו בעייתיות, מתי יש אופניים בכל תחנה ועוד סטטיסטיקות שלא בטוח שיעניין אתכם לשמוע. </p>
+    <br/>
+		<p>  מה שכן, אנחנו נורא אוהבים פידבק. אז אם תכתבו לנו <a href='mailto:bikes@telofast.com'>מייל</a> ותגידו מה אתם אוהבים ומה צריך לשפר, אנחנו מה-זה נשמח. </p>
+    <p>אגב, האתר הזה <b>מתאים גם לאנדרואיד ואייפון</b>, כשאתם בדרך - אתם מוזמנים לנסות!</p>
+   <br/>
+		  <p>  תודה ורכיבה נעימה,</p>
+		  <p> רן, רומן, מיכל ואורן (להלן צוות telofast)</p>
+    </span>
+    <a href='javascript:showDiv("mapDiv")'>&lt;&lt; חזרה</a>
   </div>
   <div id='loadingDiv' style='height:100%; position: absolute; top: 0px; display: none;'>
     <img src='spinner.gif' width='150' height='150' style='position:float' />
