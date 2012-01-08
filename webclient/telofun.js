@@ -7,6 +7,8 @@
   var swBound = new google.maps.LatLng(32.030381, 34.739285);
   var tlvBounds = new google.maps.LatLngBounds(swBound, neBound);
   var oldSize = 0;
+  var placeService;
+  var geocoder;
 
 // Global vars.
   var stations = {};  // static information about stations, mapped by id.
@@ -17,7 +19,9 @@
   var myPosCircle = undefined;
   var timeUpdateTimeout = undefined;
   var lastUpdateTime = undefined;
-  var directionsRenderer = new google.maps.DirectionsRenderer();
+  var directionsRenderer = 
+      new google.maps.DirectionsRenderer(
+          {suppressMarkers: true});
   var namesLoaded = false;
   var locationsLoaded = false;
   var bikeStatusLoaded = true;
@@ -74,13 +78,8 @@
   function resetInfoWindows() {
     for (id in stationsInfo) {
       var station = stationsInfo[id];
-/*      var content = '<span><h2 style='font-family: arial; color: blue'>' +
-          (stations[id] ? stations[id].displayName : '') + '</h2>';
-      content += '<a class='directions' style='display: none;' href='javascript:cycleTo(\'' + station.id + '\');'>מסלול לכאן</a>';
-      content += '<span class='nodirections' style='font-size: x-small'>מיקומך אינו ידוע ליצירת מסלול</span>';
-      content += '<br/></span>';*/
       var content = $(station.infowindow.getContent());
-      content.find('#stationName').text(stations[id].displayName);
+      content.find('#stationName').text((stations[id] && stations[id].displayName) ? stations[id].displayName : "");
       content.find('#directions').attr('href', 'javascript:cycleTo(\'' + id + '\')');
       content.find('#available_bikes').text(station.available_bikes);
       content.find('#available_docks').text(station.available_docks);
@@ -108,6 +107,7 @@
   }
 
   function showDirections(destination, waypoint) {
+    var CYCLING_SPEED = 7.0;  // KM/H
     var service = new google.maps.DirectionsService();
     service.route({origin: userPosition, destination: destination, travelMode: google.maps.TravelMode.WALKING, unitSystem: google.maps.UnitSystem.METRIC, waypoints: waypoint ? [{location: waypoint}] : undefined },
       function(result, status) {
@@ -115,12 +115,19 @@
           alert('בעיה בשליחת ההוראות');
           return;
         }
-        directionsRenderer.setMap(map);
-        directionsRenderer.setDirections(result);
-        if (openInfoWindow) {
-          openInfoWindow.close();
-          openInfoWindow = null;
+        if (waypoint) {  // show cycling info
+		      var route = result.routes[0];
+		      var distance = route.legs[route.legs.length-1].distance.value;
+		      var middleLatLng = google.maps.geometry.spherical.interpolate(waypoint, destination, 0.5);
+		      var placeToPutMessageLatLng = findMiddlePointToPutMessage(middleLatLng, route.legs[1].steps);
+		      var durationMins = Math.round((distance / 1000 /* m->km */) / CYCLING_SPEED * 60 /* h->m */);
+		      var routeContent = '<b>מרחק: ' + Math.round(distance/100) / 10 + " ק\"מ" + '<br/>זמן רכיבה: ' + durationMins + " דק'</b>";
+		      openInfoWindow && openInfoWindow.close();
+		      openInfoWindow = new google.maps.InfoWindow({content: routeContent, position: placeToPutMessageLatLng});
+		      openInfoWindow.open(map);
         }
+	      directionsRenderer.setDirections(result);
+	      directionsRenderer.setMap(map);
       }
     );
   }
@@ -144,6 +151,25 @@
       }
     }
     return minId;
+  }
+
+  function findMiddlePointToPutMessage(origin, steps) {
+    var minDistance = Number.MAX_VALUE;
+    var minIndex;
+    for (var i = 0; i < steps.length; ++i) {
+      var step = steps[i];
+      var curDistance = google.maps.geometry.spherical.computeDistanceBetween(
+          origin, step.start_location) +
+                        google.maps.geometry.spherical.computeDistanceBetween(
+          origin, step.end_location);
+      if (curDistance < minDistance) {
+        minDistance = curDistance;
+        minIndex = i;
+      }
+      new google.maps.InfoWindow({content: 'start ' + i, position: step.start_position}).open(map);
+      new google.maps.InfoWindow({content: 'end ' + i, position: step.end_position}).open(map);
+    }
+    return google.maps.geometry.spherical.interpolate(steps[minIndex].start_location, steps[minIndex].end_location, 0.5);
   }
 
   function timelyCallback(value) {
@@ -269,13 +295,11 @@
     station.infowindow = infowindow;
     google.maps.event.addListener(marker, 'click', function(marker,infowindow) {
       return function() {
-        if (openInfoWindow) {
-          openInfoWindow.close();
-        }
         var showDirections = (userPosition != null);
         $(infowindow.getContent()).find('.directions').toggle(showDirections);
         $(infowindow.getContent()).find('.nodirections').toggle(!showDirections);
         infowindow.open(map, marker);
+        openInfoWindow && openInfoWindow.close();
         openInfoWindow = infowindow;
       }
     }(marker, infowindow));
@@ -339,6 +363,8 @@
 
   function getCurrentStationsStatus() {
     var CURRENT_STATUS_ROW_ID = '25ncrc';
+
+    hidePrediction();
     readRowFromSpreadsheet(CURRENT_STATUS_ROW_ID, 'currentStatusCallback');
 
     showSpinner(true);
@@ -440,7 +466,7 @@
     $('#stationScoreTable').html('');
     for (var i = 0; i < scoreSortedStations.length; ++i) {
       var station = scoreSortedStations[i];
-      var line = $("<tr class='stationInScoreTable' onclick='javascript:centerOn(\'' + station.id +'\')'>" +
+      var line = $("<tr class='stationInScoreTable' onclick='javascript:centerOn(&apos;" + station.id +"&apos;)'>" +
           "<td class = 'stationInTableName stationInTableCell'>" + station.displayName + 
           "</td><td class = 'stationInTableCell'>" + station.score +
           "</td></td></tr>");
@@ -472,14 +498,17 @@
     for (var id in stations) {
       getOrCreateStationInfo(id);
     }
+    resetInfoWindows();
     maybeUpdateStationsUI();
     maybeUpdateDistanceSortedStations();
-    resetInfoWindows();
   }
 
 
-  function setMapTitle(title) {
-    $('#mapTitle').text(title);
+  function setMapTitle(titleString) {
+    var title = $('#mapTitle');
+    title.text(titleString);
+ 
+    title.css('font-size', title.length <= 12 ? 'medium' : 'small');
   }
 
   function showSpinner(show) {
@@ -524,7 +553,7 @@
   }
 
   function showDiv(whatToShow) {
-    var divs = ['mapDiv', 'stationRankingDiv', 'stationDistanceDiv'];
+    var divs = ['loadingDiv', 'mapDiv', 'stationRankingDiv', 'stationDistanceDiv'];
     for (i in divs) {
       var div = divs[i];
       $('#' + div).toggle(whatToShow == div);
@@ -542,7 +571,8 @@
 
   function initialize() {
     // Create map.
-    adjustForSmallScreen();
+    adjustToScreenSize();
+    showDiv('mapDiv');
     var latlng = new google.maps.LatLng(32.066792, 34.777694);  // Merkaz Tel Aviv
     var mapOptions = {
       zoom: 16,
@@ -557,11 +587,13 @@
     };
     map = new google.maps.Map(document.getElementById('map_canvas'),
         mapOptions);
+    google.maps.event.addListener(map, 'tilesloaded', function() {
+      $('#loadingDiv').remove();
+		});
+
     google.maps.event.addListener(map, 'click', function() {
-        if (openInfoWindow) {
-          openInfoWindow.close();
-          openInfoWindow = null;
-        }
+        openInfoWindow && openInfoWindow.close();
+        openInfoWindow = null;
 		});
 
     google.maps.event.addListener(map, 'bounds_changed', function() {
@@ -600,15 +632,18 @@
     getUserLocation();
 
 		var mapTitle = $('<div>');
-		mapTitle.css({'color': 'black', 'font-weight': 'bold', 'font-size': 'medium', 'width': '180px'});
+		mapTitle.css({'color': 'black', 'font-weight': 'bold', 'font-size': 'medium', 'width': '180px', 
+        'cursor': 'pointer'});
 		mapTitle.attr('id', 'mapTitle');
+    mapTitle.click(getCurrentStationsStatus);
 
     var imageDiv = $('<div>');
     imageDiv.css({'float':'right'});
 
     var refreshImg = $('<img>');
     refreshImg.attr({'src': 'refresh.png', 'width': '21', 'height': '21', 'title':'רענן'});
-    refreshImg.css({ 'vertical-align': 'middle', 'padding': '1px', 'border-left': 'solid black 1px'});
+    refreshImg.css({'vertical-align': 'middle', 'padding': '1px', 'border-right': 'solid black 1px', 
+      'float': 'left'});
     refreshImg.click(getCurrentStationsStatus);
 
     var myLocImg = $('<img>');
@@ -621,25 +656,26 @@
     listImg.css({ 'vertical-align': 'middle', 'padding': '1px', 'border-left': 'solid black 1px'});
     listImg.click(function() { showDiv('stationDistanceDiv') });
 
-    imageDiv.append(refreshImg, myLocImg, listImg);
+    imageDiv.append(myLocImg, listImg);
 
 		var myTextDiv = $('<div>');
 		myTextDiv.css({'background': 'white', 'opacity': 0.7, 'width': '190px', 'height' : '20px', 'border': 'solid black 1px', 'padding': '5px', 'text-align': 'center' });
 		var spinner = $('<img>');
 		spinner.attr({'src': 'spinner.gif', 'id': 'spinner', 'height': '19px', 'width': '19px'});
-    myTextDiv.append(imageDiv, mapTitle, spinner);
+    myTextDiv.append(refreshImg, imageDiv, mapTitle, spinner);
 
 		map.controls[google.maps.ControlPosition.TOP_LEFT].push(myTextDiv.get()[0]);
+    geocoder = new google.maps.Geocoder();
+    initAutocomplete();
   }
 
-function adjustForSmallScreen() {
-  if (screen.availWidth <= 800) {
-     $('#legend').hide();
-     $('#upperBar').hide();
-     $('#mainTable').width('100%');
-     $('#mainTable').height('100%');
-     $('#mapTd').width('100%');
-     $('#lowerText').remove();
+function adjustToScreenSize() {
+  if (screen.availWidth > 800) {
+     $('#legend').show();
+     $('#upperBar').show();
+     $('#mainTable').height('70%');
+     $('#mapTd').width('80%');
+     $('#lowerText').show();
   }
 }
 
@@ -677,3 +713,32 @@ function getStationRanking() {
   var STATION_RANKING_ROW_ID = '20ax0j';
   readRowFromSpreadsheet(STATION_RANKING_ROW_ID, 'stationRankingCallback');
 }
+
+function initAutocomplete() {
+  placeService = new google.maps.places.PlacesService(map);
+  var text = $('#locate').get()[0];
+  var autocomplete = new google.maps.places.Autocomplete(text, {bounds: tlvBounds, types: ['geocode']});
+}
+
+function search() {
+  var location = $('#locate').val();
+  geocoder.geocode({bounds: tlvBounds, address: location}, function(result, status) {
+    if (status == google.maps.GeocoderStatus.OK) {
+      var placeLocation = result[0].geometry.location;
+		  openInfoWindow && openInfoWindow.close();
+      openInfoWindow = new google.maps.InfoWindow({content: location, position: placeLocation});
+      openInfoWindow.open(map);
+
+		  map.setCenter(placeLocation);
+    }
+  });
+}
+
+function togglePrediction() {
+  $('#prediction').toggle();
+}
+
+function hidePrediction() {
+  $('#prediction').hide();
+}
+
