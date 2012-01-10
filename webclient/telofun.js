@@ -1,8 +1,8 @@
 // Constants.
   var START_ROW = 4;
-  var ROWS_PER_SAMPLE = 5;
+  var ROWS_PER_SAMPLE = 6;
   var RATIO_PROBLEM = 0.15;  // ratio above which there is a problem with the station
-  var ONE_OR_TWO_COMPARED_TO_NONE = 0.25;  // how to weigh 1-2 bikes/docks compared to none
+  var ONE_OR_TWO_COMPARED_TO_NONE = 0.5;  // how to weigh 1-2 bikes/docks compared to none
   var neBound = new google.maps.LatLng(32.13194, 34.847946);
   var swBound = new google.maps.LatLng(32.030381, 34.739285);
   var tlvBounds = new google.maps.LatLngBounds(swBound, neBound);
@@ -28,6 +28,7 @@
   var scoresLoaded = false;
   var distanceSortedStations = [];
   var scoreSortedStations = [];
+  var hashAware = 0;
 
 
   function numericTimeToHumanTime(time) {
@@ -39,6 +40,7 @@
   }
   function timeChanged(time) {
     $('#timeLabel').html(numericTimeToHumanTime(time));
+    updateHash('time=' + time);
   }
 
   function getFloatStatsFromFeed(rowFeed) {
@@ -74,17 +76,20 @@
   }
 
   function createInfoWindow() {
-    return $("<span><h2 style='font-family: arial; color: blue'><span id='stationName'></span></h2><a id='directions' class='directions'>מסלול לכאן</a><span class='nodirections' style='font-size: x-small; display: none; ' id='nodirections'>מיקומך אינו ידוע ליצירת מסלול</span><br><p><span style='border: solid 1px'><img src='greenbike.png' title='אופניים פנויים' ><span id='available_bikes'></span></span>&nbsp;&nbsp;<span style='border: solid 1px'><img src='docks.png' title='תחנות עגינה פנויות' ><span id='available_docks'> </span></span></p></span>").get()[0];
+    return $("<div style='overflow: auto'><h2 style='font-family: arial; color: blue'><span id='stationName'></span></h2><a id='directions' class='directions'>מסלול לכאן</a><span class='nodirections' style='font-size: x-small; display: none; ' id='nodirections'>מיקומך אינו ידוע ליצירת מסלול</span><br><p><span style='border: solid 1px'><img src='greenbike.png' title='אופניים פנויים' ><span id='available_bikes'></span></span>&nbsp;&nbsp;<span style='border: solid 1px'><img src='docks.png' title='תחנות עגינה פנויות' ><span id='available_docks'> </span></span></p><span id='stats'></span></div>").get()[0];
   }
 
   function resetInfoWindows() {
     for (id in stationsInfo) {
       var station = stationsInfo[id];
+      station.marker.setTitle((station[id] && stations[id].displayName) ? stations[id].displayName : ''  + ', אופניים: ' + station.available_bikes + ' תחנות: ' + station.available_docks);
+
       var content = $(station.infowindow.getContent());
       content.find('#stationName').text((stations[id] && stations[id].displayName) ? stations[id].displayName : "");
       content.find('#directions').attr('href', 'javascript:cycleTo(\'' + id + '\')');
       content.find('#available_bikes').text(station.available_bikes);
       content.find('#available_docks').text(station.available_docks);
+      content.find('#stats').hide();
     }
   }
 
@@ -98,22 +103,17 @@
   }
 
   function walkTo(destinationId) {
-    showDiv('mapDiv');
+    setSection('map');
     showDirections(stations[destinationId].latLng);
   }
 
-  function showScoresAndCenterOn(id) {
-    showDiv('mapDiv');
-    var numStations = scoreSortedStations.length;
-    for (var i = 0; i < numStations; ++i) {
-      var station = scoreSortedStations[i];
-      var marker = stationsInfo[station.id].marker;
-      var file = (i <= numStations * 0.25 ? 'green.png' : (i <= 0.75 * numStations ? 'yellow.gif': 'red.gif'));
-      marker.setIcon(new google.maps.MarkerImage(file, new google.maps.Size(20, 20)));
+  function centerOn(id_opt) {
+    if (id_opt) {
+      map.setCenter(stations[id_opt].latLng);
+      map.setZoom(Math.max(map.getZoom(), 16));
     }
-    map.setCenter(stations[id].latLng);
-    map.setZoom(Math.max(map.getZoom(), 17));
-    setMapTitle('תחנות טובות, תחנות רעות');
+    setSection('stationRankingMap');
+    updateMapForStationRanking();
   }
 
   function showDirections(destination, waypoint) {
@@ -197,6 +197,7 @@
       var sum = 0;
       var notEnoughBikes = 0;
       var notEnoughDocks = 0;
+      var inactive = 0;
       for (var i = 0; i < stats.length; ++i) {
         if (id in stats[i]) {
           var value = stats[i][id];
@@ -214,6 +215,10 @@
             case 4:  // 1-2 docks
               notEnoughDocks += value * ONE_OR_TWO_COMPARED_TO_NONE;
               break;
+            case 5:  // inactive
+              notEnoughBikes += value;
+              notEnoughDocks += value;
+              inactive += value;
           }
         }
       }
@@ -234,20 +239,25 @@
         statsArray.push(
     'ב- ' + Math.round(notEnoughDocks / sum * 100) + '% מהמקרים לא היו תחנות עגינה');
       }
-      // Handle the special case where the station never became active.
-      if (notEnoughBikes == notEnoughDocks && (notEnoughBikes + notEnoughDocks) >= 0.9 * sum) {
+      // Handle the special case where the station never, or only recently, became active.
+      if (inactive >= 0.9 * sum) {
         image = 'dunno.png';
-        statsArray = [ 'נראה שהתחנה מעולם לא היתה תקינה' ];
+        statsArray = [ 'אין מספיק פרטים לגבי התחנה' ];
       }
       if (sum == 0 || (isNotEnoughBikes && isNotEnoughDocks)) {
         image = 'dunno.png';
       }
       statsContent += statsArray.join(' ו');
+      if (statsContent.length == 0) {
+        statsContent = 'התחנה בד"כ תקינה';
+      }
 
       var station = stationsInfo[id];
       changeMarkerUrl(station.marker, image);
       var content = (statsContent != '') ? (statsContent + ' בשעה זו') : '';
-      $(station.infowindow.getContent()).append($('<br/><span>'+content+'</span>'));
+      $(station.infowindow.getContent()).find('#stats').html('<br/><span>'+content+'</span>');
+      $(station.infowindow.getContent()).find('#stats').show();
+      station.marker.setTitle(stations[id].displayName + ' - '  + content);
     }
     // Turn all unknown stations into a question mark.
     for (id in stations) {
@@ -338,15 +348,19 @@
     }
     showSpinner(false);
     bikeStatusLoaded = true;
-    resetInfoWindows();
-    maybeUpdateStationsUI();
-    maybeUpdateDistanceSortedStations();
+    // Update UI only if we're still on this tab.
+    if (getSection() == 'map') {
+      resetInfoWindows();
+      maybeUpdateStationsUI();
+      maybeUpdateDistanceSortedStations();
+    }
   }
 
   function maybeUpdateStationsUI() {
     if (!namesLoaded || !locationsLoaded || !bikeStatusLoaded) {
       return;
     }
+    getStationRanking();
     for (id in stations) {
       var station = stationsInfo[id];
       var image;
@@ -360,14 +374,6 @@
         image = 'greenbike.png';
       }
       changeMarkerUrl(station.marker, image);
-      station.marker.setTitle(stations[id].displayName + ', אופניים: ' + station.available_bikes + ' תחנות: ' + station.available_docks);
-    }
-    getStationRanking();
-  }
-
-  function createStationRankingIFrame() {
-    if ($('#stationRankFrame').length == 0) {
-      $('#stationRankPlaceholder').append("<iframe id='stationRankFrame' width='350' height='640' src='https://docs.google.com/spreadsheet/pub?hl=en_US&hl=en_US&key=0AoOjWPdv2TXodHlMTTFrakJKR2F6cldJTGktQnNXV0E&single=true&gid=9&output=html'></iframe>");
     }
   }
 
@@ -385,9 +391,10 @@
     }
 
     $('#station_ok').text('תחנה תקינה');
-    $('#station_nobikes').text('אין אופניים');
-    $('#station_nodocks').text('אין תחנות עגינה');
+    $('#station_nobikes').text('אין/יש מעט אופניים');
+    $('#station_nodocks').text('אין/יש מעט תחנות עגינה');
     $('#station_noinfo').text('אין פרטים');
+    showLegend('now');
   }
 
   function timeUp(time) {
@@ -409,6 +416,7 @@
     $('#station_nobikes').text('לעתים אין אופניים');
     $('#station_nodocks').text('לעתים תחנה מלאה');
     $('#station_noinfo').text('תחנה בעייתית או שאין פרטים');
+    showLegend('prediction');
     setMapTitle('תחזית לשעה ' + numericTimeToHumanTime(time));
   }
 
@@ -463,34 +471,63 @@
       $('#stationDistanceTable').html('');
       for (var i=0; i < Math.min(4, distanceSortedStations.length); ++i) {
         var station = distanceSortedStations[i];
+        var color;
+        var bikes = stationsInfo[station.id].available_bikes;
+        var docks = stationsInfo[station.id].available_docks;
+        if (bikes == 0) {
+          color = 'red';
+        } else if (bikes <= 2) {
+          color ='orange';
+        } else {
+          color = 'green';
+        }
         var line = $("<tr class='stationInTable' onclick='javascript:walkTo(\"" + station.id +"\")'>" +
-            "<td class = 'stationInTableName stationInTableCell'>" + station.displayName + 
-            "</td><td class = 'stationInTableCell'><img src='greenbike.png' width='17' height='17' />" + stationsInfo[station.id].available_bikes +
-            "</td><td class ='stationInTableCell'><img src='docks.png' width='17' height='17' />" + stationsInfo[station.id].available_docks +
+            "<td class = 'stationInTableName stationInTableCell' style='color: " + color + "'>" + station.displayName + 
+            "</td><td class = 'stationInTableCell'><img src='greenbike.png' width='17' height='17' />" + bikes +
+            "</td><td class ='stationInTableCell'><img src='docks.png' width='17' height='17' />" + docks +
             "</td><td class='stationInTableCell'><img src='walk.gif' width='17' height='17' />" + station.distance + ' מ\'</td></tr>');
         $('#stationDistanceTable').append(line);
       }
   }
 
-  function populateStationScoresTable(scoreSortedStations) {
+  function populateStationScores(scoreSortedStations) {
     $('#stationScoreTable').html('');
-    for (var i = 0; i < scoreSortedStations.length; ++i) {
+    var numStations = scoreSortedStations.length;
+    for (var i = 0; i < numStations; ++i) {
       var img = null;
+      var title = null;
       if (i == 0) {
         img = 'green.png';
+        title = 'תחנות סבבה';
       } else if (i == Math.round(0.25 * scoreSortedStations.length)) {
         img = 'yellow.gif';
+        title = 'תחנות בינוניות';
       } else if (i == Math.round(0.75 * scoreSortedStations.length)) {
         img = 'red.gif';
+        title = 'תחנות מעפנות';
       }
       var station = scoreSortedStations[i];
-      var line = $("<tr class='stationInScoreTable' onclick='javascript:showScoresAndCenterOn(&apos;" + station.id +"&apos;)'>" +
-          "<td>" + (img ? '<img width=25 height=25 src="' + img + '"/>' : '') + '</td>' +
+      var line = $("<tr class='stationInScoreTable' onclick='javascript:centerOn(&apos;" + station.id +"&apos;)'>" +
+          "<td>" + (img ? '<img width=25 height=25 src="' + img + '" title ="' + title + '"/>' : '') + '</td>' +
           "<td class = 'stationInTableName stationInTableCell'>" + station.displayName + 
           "</td><td class = 'stationInTableCell'>" + station.score +
           "</td></td></tr>");
       $('#stationScoreTable').append(line);
     }
+  }
+
+  function updateMapForStationRanking() {
+    var numStations = scoreSortedStations.length;
+    for (var i = 0; i < scoreSortedStations.length; ++i) {
+      var station = stations[scoreSortedStations[i].id];
+      var marker = stationsInfo[scoreSortedStations[i].id].marker;
+      var file = (i <= numStations * 0.25 ? 'green.png' : (i <= 0.75 * numStations ? 'yellow.gif': 'red.gif'));
+      marker.setIcon(new google.maps.MarkerImage(file, null, null, null, new google.maps.Size(20, 20)));
+      marker.setTitle('התחנה בעייתית ' + Math.round(100 - station.score) + '% מהזמן');
+    }
+    // Update other map features.
+    showLegend('ranking');
+    setMapTitle('דירוג תחנות');
   }
 
   function maybeUpdateDistanceSortedStations() {
@@ -573,12 +610,26 @@
     }
   }
 
-  function showDiv(whatToShow) {
-    var divs = ['loadingDiv', 'mapDiv', 'stationRankingDiv', 'aboutDiv', 'stationDistanceDiv'];
-    for (i in divs) {
-      var div = divs[i];
-      $('#' + div).toggle(whatToShow == div);
+  function setSection(whatToShow) {
+    var sectionToDiv = {'loading': 'loadingDiv', 'map': 'mapDiv', 'stationRanking': 'stationRankingDiv',
+                        'stationRankingMap' : 'mapDiv', 'about': 'aboutDiv', 
+                        'stationDistance': 'stationDistanceDiv'};
+    if (!whatToShow in sectionToDiv) {
+      alert('error, could not find ' + whatToShow + ' in sectionToDiv');
     }
+    for (section in sectionToDiv) {
+      var div = sectionToDiv[section];
+      var section = sectionToDiv[section];
+      $('#' + div).hide();
+    }
+    $('#' + sectionToDiv[whatToShow]).show();
+    updateHash(whatToShow, true);
+    google.maps.event.trigger(map, 'resize');
+    hidePrediction();
+  }
+
+  function getSection() {
+    return location.hash ? location.hash.substring(1) : '';
   }
 
   function loadStationsFromWeb() {
@@ -593,7 +644,6 @@
   function initialize() {
     // Create map.
     adjustToScreenSize();
-    showDiv('mapDiv');
     var latlng = new google.maps.LatLng(32.066792, 34.777694);  // Merkaz Tel Aviv
     var mapOptions = {
       zoom: 16,
@@ -674,7 +724,7 @@
     var listImg = $('<img>');
     listImg.attr({'src': 'list.png', 'width': '21', 'height': '21', 'title':'תחנות קרובות'});
     listImg.css({ 'vertical-align': 'middle', 'padding': '1px', 'border-left': 'solid black 1px'});
-    listImg.click(function() { showDiv('stationDistanceDiv') });
+    listImg.click(function() { setSection('stationDistance') });
 
     imageDiv.append(myLocImg, listImg);
 
@@ -687,6 +737,8 @@
 		map.controls[google.maps.ControlPosition.TOP_LEFT].push(myTextDiv.get()[0]);
     geocoder = new google.maps.Geocoder();
     initAutocomplete();
+    listenToHashChanges();
+    showDivByLocationHash(location.hash);
   }
 
 function adjustToScreenSize() {
@@ -696,7 +748,20 @@ function adjustToScreenSize() {
      $('#mainTable').height('75%');
      $('#mapTd').width('80%');
      $('#lowerText').show();
+
+		// Initialize G+
+		window.___gcfg = {lang: 'iw'};
+
+		(function() {
+		  var po = document.createElement('script'); po.type = 'text/javascript'; po.async = true;
+		  po.src = 'https://apis.google.com/js/plusone.js';
+		  var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+		})();
   }
+	// For the iPhone's status bar to disappear.
+  setTimeout(function(){
+			window.scrollTo(0, 1);
+  }, 0);
 }
 
 function readRowFromSpreadsheet(lineId, callback) {
@@ -722,7 +787,11 @@ function stationRankingCallback(stationsInfo) {
   scoreSortedStations.sort(function(a,b) {
     return b.score - a.score;
   });
-  populateStationScoresTable(scoreSortedStations);
+  $('#stationRankingSpinner').hide();
+  populateStationScores(scoreSortedStations);
+  if (getSection() == 'stationRankingMap') {
+    updateMapForStationRanking();
+  }
 }
 
 function getStationRanking() {
@@ -754,12 +823,13 @@ function search() {
   });
 }
 
-function togglePrediction() {
-  $('#prediction').toggle();
-//  alert ('display is ' + $('#prediction').css('display') + ', type is ' + $('#hour').get()[.attr('type'));
+function showPrediction() {
   if ($('#prediction').css('display') != 'none' && $('#hour').get()[0].type != 'range') {
-    alert('הדפדפן שלך לא חדש מספיק ואינו תומך בתכונות הנדרשות לתחזית. על מנת לראות תחזית מומלץ להשתמש בדפדפן חדש כמו כרום של גוגל');
+    alert('הדפדפן שלך לא מתקדם מספיק ואינו תומך בתכונות הנדרשות לתחזית. על מנת לראות תחזית מומלץ להשתמש בדפדפן חדש כמו כרום ');
     $('#prediction').hide();
+  } else {
+    setSection('map');
+  $('#prediction').show();
   }
 }
 
@@ -767,3 +837,77 @@ function hidePrediction() {
   $('#prediction').hide();
 }
 
+function delink(link) {
+  $("#upperBar a").css({'text-decoration' : '', 'font-weight': ''});
+  $('#' + 	link).css({'text-decoration': 'none', 'font-weight': 'bold'});
+}
+
+function updateHash(hash, aware) {
+  if (aware) {
+    hashAware++;
+  }
+  location.hash = hash;
+}
+
+function showDivByLocationHash(hash) {
+  if (hashAware) {
+    hashAware--;
+    return;
+  }
+  switch (hash) {
+    case '#about':
+      setSection("about"); 
+      delink("aAbout");
+      break;
+    case '':
+    case '#map':
+      setSection("map"); 
+      delink("aMapNow");
+      resetInfoWindows();
+      maybeUpdateStationsUI();
+      maybeUpdateDistanceSortedStations();
+      break;
+    case '#stationRankingMap':
+      setSection('stationRankingMap');
+      delink('aStationRanking');
+      updateMapForStationRanking();
+      break;
+    case '#stationRanking':
+      setSection("stationRanking"); 
+      delink("aStationRanking");
+      break;
+    default:
+      if (hash.indexOf('#time') == 0) { 
+        var hour = hash.split('=')[1];
+        $('#hour').val(hour);
+        $('#prediction').show();
+        timeChanged(hour);
+        timeUp(hour);
+      }
+ }
+}
+
+function listenToHashChanges() {
+  $(window).bind('hashchange', function() {
+    showDivByLocationHash(location.hash);
+  });
+}
+
+function showLegend(legend) {
+  switch (legend) {
+    case 'ranking':
+      $('#rankingLegend').show();
+      $('#regularLegend').hide();
+      break;
+    case 'now':
+      $('#rankingLegend').hide();
+      $('#regularLegend').show();
+      $('.currentBikesLegend').show();
+      break;
+    case 'prediction':
+      $('#rankingLegend').hide();
+      $('#regularLegend').show();
+      $('.currentBikesLegend').hide();
+      break;
+  }
+}

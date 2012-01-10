@@ -6,6 +6,18 @@
 <meta name = "viewport" content = "initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0">
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 <meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black" />
+<meta name="apple-touch-icon" content="http://telofast.com/telofun/logo.gif" />
+<meta property="og:title" content="Tel-O-Fast" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="http://telofast.com/telofun/" />
+<meta property="og:image" content="http://telofast.com/telofun/logo.gif" />
+<meta property="og:site_name" content="TelOFast" />
+<meta property="fb:admins" content="544108348" />
+<meta name="title" content="Tel-O-Fast" />
+<meta name="description" content="אתר התל אופן שלי" />
+<link rel="image_src" type='image/png' href="http://telofast.com/telofun/logo.gif" />
+<link rel="icon" type='image/png' href="http://telofast.com/telofun/favicon.ico" />
 <style type="text/css">
   html { height: 100% }
   body { height: 100%; margin: 0; padding: 0 }
@@ -32,14 +44,32 @@
     var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
   })();
 </script>
+<script type="text/javascript" src="https://apis.google.com/js/plusone.js">
+  {lang: 'iw'}
+</script>
 </head>
 <body onload="initialize()" dir="rtl" style='font-family: arial; padding: 5px'>
-  <span id='upperBar' style='display:none'>
-    <a href='javascript:showDiv("aboutDiv");'>אודות</a>
-    <a href='javascript:showDiv("stationRankingDiv");'>ציוני תחנות</a>
-    <a href='javascript:showDiv("mapDiv");'>מפה</a>
-    <a href='mailto:bikes@telofast.com;'>כיתבו לנו</a>
-  </span>
+  <div id="fb-root"></div>
+	<script>(function(d, s, id) {
+		var js, fjs = d.getElementsByTagName(s)[0];
+		if (d.getElementById(id)) return;
+		js = d.createElement(s); js.id = id;
+		js.src = "//connect.facebook.net/he_IL/all.js#xfbml=1";
+		fjs.parentNode.insertBefore(js, fjs);
+	}(document, 'script', 'facebook-jssdk'));</script>
+  <div id='upperBar' style='display:none; height: 25px;'><span style='vertical-align: middle;'>
+    <a id='aAbout' href='javascript:setSection("about"); delink("aAbout");'>אודות</a>&nbsp;&nbsp;
+    <a id='aMapNow' href='javascript:setSection("map"); delink("aMapNow"); getCurrentStationsStatus()' style='text-decoration: none; font-weight:bold'>עכשיו</a>&nbsp;&nbsp;
+    <a id='aStationRanking' href='javascript:setSection("stationRanking");delink("aStationRanking")'>ציוני תחנות</a>&nbsp;&nbsp;
+    <a id='aWriteUs' href='mailto:bikes@telofast.com;'>כיתבו לנו</a>&nbsp;&nbsp;
+    <a id='aPrediction' href='javascript:showPrediction();delink("aPrediction")' id='predictionA'>תחזית</a>
+    <span id='prediction' style='display:none; font-size: small'><b>&nbsp;
+    לשעה
+    </b>
+		<input type="range" name="hour" id="hour" min="5" max="22" step="0.25" onchange="timeChanged(this.value)" onmouseup="timeUp(this.value)" style="width: 500px; vertical-align: middle" value="12"/>
+		<span id="timeLabel"></span>
+
+  </span></div>
   <div id='mapDiv' style='height: 100%;'>	
 		<table id='mainTable' style="width: 100%; height: 100%" role="presentation">
 		  <tbody>
@@ -47,11 +77,15 @@
 		      <div id="map_canvas" ></div>
 		    </td>
 		    <td id='legend' style="vertical-align: top; display:none">
-		      <span style='font-family: arial;'>
-		        <p><img src='greenbike.png'/ style='vertical-align: middle'> <span id='station_ok'> תחנה תקינה </span></p>
-		        <p><img src='nobikes_0.png' style='vertical-align: middle'/> <span id='station_nobikes'> אין אופניים </span></p>
-		        <p><img src='nodocks_0.png'  style='vertical-align: middle'/> <span id='station_nodocks'> אין תחנות עגינה </span></p>
-		        <p><img src='dunno.png'  style='vertical-align: middle'/> <span id='station_noinfo'> אין פרטים / תחנה לא פעילה </span></p>
+		      <span style='font-family: arial; font-size: small' id='regularLegend'>
+		        <p><img src='greenbike.png'/ width='26' height='26' style='vertical-align: middle'> <span id='station_ok'> תחנה תקינה </span></p>
+		        <p><img src='nobikes_0.png' width='26' height='26' style='vertical-align: middle'/> <span class='currentBikesLegend'><img src='nobikes_1.png' width='26' height='26' style='vertical-align: middle'/> <img src='nobikes_2.png' width='26' height='26' style='vertical-align: middle'/> </span><span id='station_nobikes'></span></p>
+		        <p><img src='nodocks_0.png' width='26' height='26' style='vertical-align: middle'/> <span class='currentBikesLegend'><img src='nodocks_1.png' width='26' height='26' style='vertical-align: middle'/> <img src='nodocks_2.png' width='26' height='26' style='vertical-align: middle'/> </span><span id='station_nodocks'></span></p>
+		        <p><img src='dunno.png' width='26' height='26' style='vertical-align: middle'/> <span id='station_noinfo'></span></p>
+		      </span>
+		      <span style='font-family: arial; font-size: small; display:none' id='rankingLegend'>
+		        <p><img src='green.png'/ width='26' height='26' style='vertical-align: middle'> תחנה סבבה </p>
+		        <p><img src='yellow.gif' width='26' height='26' style='vertical-align: middle'/> תחנה בינונית </p>  		        <p><img src='red.gif' width='26' height='26' style='vertical-align: middle'/> תחנה מעפנה </p>
 		      </span>
 		    </td></tr>
 		  </tbody>
@@ -63,22 +97,11 @@
 		  <input type='text' id='locate' size=60></input> <input type='button' value='חפש' length=40 onclick='search(this.value)'></input>
 		  <br/> <br/>
 		  <br/>
-      <a href='javascript:togglePrediction()' id='predictionA'>
-      הצג תחזית
-      </a>
-      <br/>
-      <span id='prediction' style='display:none'>
-				<b>
-				הראה תחזית לשעה:
-				<br/><br/><br/>
-				<input type="range" name="hour" id="hour" min="5" max="22" step="0.25" onchange="timeChanged(this.value)" onmouseup="timeUp(this.value)" style="width: 500px" value="12"/>
-				<span id="timeLabel"></span>
-		    <br/>
       </span>
     	<br/>
-	    <span style='font-size: x-small'>
-    	* הסטטיסטיקה נאספת בימים א-ה.
-    	</span>
+      <br/>
+      <div class="fb-like" data-href="http://telofast.com" data-send="false" data-layout="button_count" data-width="100" data-show-faces="true"></div>
+      <g:plusone size="small" href="http://telofast.com"></g:plusone>
     </span>
     <br/>
   </div>
@@ -92,15 +115,18 @@
     </tbody>
   </table>
   <br/><br/>
-  <a href='javascript:showDiv("mapDiv")'>&lt;&lt; חזרה</a>
+  <a href='javascript:setSection("map")'>&lt;&lt; חזרה</a>
   </div>
   <div id='stationRankingDiv' style='display: none'>
+  <h2>ציוני תחנות</h2>
+  <span><b><p>לחצו על התחנות בשביל לראותן במפה</p></b></span>
+  <span id='stationRankingSpinner'><img src='spinner.gif' width='25' height='25' /></span>
   <table id='stationScoreTable' cellspacing="0" style='font-size: large; font-weight: none; border: 1px'>
     <tbody>
     </tbody>
   </table>
   <br/><br/>
-  <a href='javascript:showDiv("mapDiv")'>&lt;&lt; חזרה</a>
+  <a href='javascript:setSection("map")'>&lt;&lt; חזרה</a>
   </div>
   <div id='aboutDiv' style='display: none; width: 600px'>
     <h1>אז מה זה פה?</h1>
@@ -114,9 +140,9 @@
     <p>אגב, האתר הזה <b>מתאים גם לאנדרואיד ואייפון</b>, כשאתם בדרך - אתם מוזמנים לנסות!</p>
    <br/>
 		  <p>  תודה ורכיבה נעימה,</p>
-		  <p> רן, רומן, מיכל ואורן (להלן צוות telofast)</p>
+		  <p> מיכל, רן, רומן, ואורן (להלן צוות telofast)</p>
     </span>
-    <a href='javascript:showDiv("mapDiv")'>&lt;&lt; חזרה</a>
+    <a href='javascript:setSection("map")'>&lt;&lt; חזרה</a>
   </div>
   <div id='loadingDiv' style='height:100%; position: absolute; top: 0px; display: none;'>
     <img src='spinner.gif' width='150' height='150' style='position:float' />
