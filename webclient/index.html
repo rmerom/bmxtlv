@@ -59,7 +59,7 @@
 	}(document, 'script', 'facebook-jssdk'));</script>
   <div id='upperBar' style='display:none; height: 25px;'><span style='vertical-align: middle;'>
     <a id='aAbout' href='javascript:setSection("about"); delink("aAbout");'>אודות</a>&nbsp;&nbsp;
-    <a id='aMapNow' href='javascript:setSection("map"); delink("aMapNow"); getCurrentStationsStatus()' style='text-decoration: none; font-weight:bold'>עכשיו</a>&nbsp;&nbsp;
+    <a id='aMapNow' href='javascript:setSection("map"); delink("aMapNow"); fetchCurrentStationsStatus()' style='text-decoration: none; font-weight:bold'>עכשיו</a>&nbsp;&nbsp;
     <a id='aStationRanking' href='javascript:setSection("stationRanking");delink("aStationRanking")'>ציוני תחנות</a>&nbsp;&nbsp;
     <a id='aWriteUs' href='mailto:bikes@telofast.com;'>כיתבו לנו</a>&nbsp;&nbsp;
     <a id='aPrediction' href='javascript:showPrediction();delink("aPrediction")' id='predictionA'>תחזית</a>
@@ -111,6 +111,7 @@
 
   </h3>
   <table id='stationDistanceTable' cellspacing="0" style='font-size: large; font-weight: none; border: 1px'>
+    <span id='stationDistanceSpinner'><img src='spinner.gif' width='25' height='25' /></span>
     <tbody>
     </tbody>
   </table>
@@ -118,7 +119,7 @@
   <a href='javascript:setSection("map")'>&lt;&lt; חזרה</a>
   </div>
   <div id='stationRankingDiv' style='display: none'>
-  <h2>ציוני תחנות</h2>
+  <h2>ציוני תחנות <img src='map.gif' height='30' width='30' onclick='javascript:centerOn()' style='cursor: pointer' /></h2>
   <span><b><p>לחצו על התחנות בשביל לראותן במפה</p></b></span>
   <span id='stationRankingSpinner'><img src='spinner.gif' width='25' height='25' /></span>
   <table id='stationScoreTable' cellspacing="0" style='font-size: large; font-weight: none; border: 1px'>

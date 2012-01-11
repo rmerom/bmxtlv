@@ -1,14 +1,17 @@
 // Constants.
   var START_ROW = 4;
   var ROWS_PER_SAMPLE = 6;
+  var SAMPLES_PER_HOUR = 4;
   var RATIO_PROBLEM = 0.15;  // ratio above which there is a problem with the station
   var ONE_OR_TWO_COMPARED_TO_NONE = 0.5;  // how to weigh 1-2 bikes/docks compared to none
   var neBound = new google.maps.LatLng(32.13194, 34.847946);
-  var swBound = new google.maps.LatLng(32.030381, 34.739285);
+  var swBound = new google.maps.LatLng(32.030381, 34.749285);
   var tlvBounds = new google.maps.LatLngBounds(swBound, neBound);
   var oldSize = 0;
   var placeService;
   var geocoder;
+  var currentSection;
+  var spinnerCount = 0;
 
 // Global vars.
   var stations = {};  // static information about stations, mapped by id.
@@ -24,7 +27,7 @@
           {suppressMarkers: true});
   var namesLoaded = false;
   var locationsLoaded = false;
-  var bikeStatusLoaded = true;
+  var bikeStatusLoaded = false;
   var scoresLoaded = false;
   var distanceSortedStations = [];
   var scoreSortedStations = [];
@@ -40,7 +43,6 @@
   }
   function timeChanged(time) {
     $('#timeLabel').html(numericTimeToHumanTime(time));
-    updateHash('time=' + time);
   }
 
   function getFloatStatsFromFeed(rowFeed) {
@@ -81,7 +83,7 @@
 
   function resetInfoWindows() {
     for (id in stationsInfo) {
-      var station = stationsInfo[id];
+      var station = getOrCreateStationInfo(id);
       station.marker.setTitle((station[id] && stations[id].displayName) ? stations[id].displayName : ''  + ', אופניים: ' + station.available_bikes + ' תחנות: ' + station.available_docks);
 
       var content = $(station.infowindow.getContent());
@@ -104,16 +106,19 @@
 
   function walkTo(destinationId) {
     setSection('map');
+    delink('aMapNow');
     showDirections(stations[destinationId].latLng);
   }
 
   function centerOn(id_opt) {
+    setSection('stationRankingMap');
+    updateMapForStationRanking();
     if (id_opt) {
       map.setCenter(stations[id_opt].latLng);
       map.setZoom(Math.max(map.getZoom(), 16));
+    } else {
+      map.fitBounds(tlvBounds);
     }
-    setSection('stationRankingMap');
-    updateMapForStationRanking();
   }
 
   function showDirections(destination, waypoint) {
@@ -266,6 +271,7 @@
       }
     }
     showSpinner(false);
+    showLegend('now');
   }
 
   function changeMarkerUrl(marker, aUrl) {
@@ -349,11 +355,11 @@
     showSpinner(false);
     bikeStatusLoaded = true;
     // Update UI only if we're still on this tab.
-    if (getSection() == 'map') {
+    if (getSection() != 'stationRankingMap' && getSection().indexOf('time') == -1) {
       resetInfoWindows();
       maybeUpdateStationsUI();
-      maybeUpdateDistanceSortedStations();
     }
+    maybeUpdateDistanceSortedStations();
   }
 
   function maybeUpdateStationsUI() {
@@ -377,10 +383,16 @@
     }
   }
 
-  function getCurrentStationsStatus() {
+  function getCurrentStationStatus() {
+    setSection('map');
+    delink('aMapNow');
+    hidePrediction();
+    fetchCurrentStationsStatus();
+  }
+
+  function fetchCurrentStationsStatus() {
     var CURRENT_STATUS_ROW_ID = '25ncrc';
 
-    hidePrediction();
     readRowFromSpreadsheet(CURRENT_STATUS_ROW_ID, 'currentStatusCallback');
 
     showSpinner(true);
@@ -398,10 +410,11 @@
   }
 
   function timeUp(time) {
+    updateHash('time=' + time, true);
     if (time == 24) {   // Special case
       time = 0;
     }
-    var baseRow = START_ROW + ROWS_PER_SAMPLE * time * 4 - 1;  // first row considered headers
+    var baseRow = START_ROW + ROWS_PER_SAMPLE * time * SAMPLES_PER_HOUR - 1;  // first row considered headers
 
     for (id in stations) {
       changeMarkerUrl(stationsInfo[id].marker, 'spinner.gif');
@@ -468,26 +481,27 @@
   }
 
   function populateStationDistanceTable() {
-      $('#stationDistanceTable').html('');
-      for (var i=0; i < Math.min(4, distanceSortedStations.length); ++i) {
-        var station = distanceSortedStations[i];
-        var color;
-        var bikes = stationsInfo[station.id].available_bikes;
-        var docks = stationsInfo[station.id].available_docks;
-        if (bikes == 0) {
-          color = 'red';
-        } else if (bikes <= 2) {
-          color ='orange';
-        } else {
-          color = 'green';
-        }
-        var line = $("<tr class='stationInTable' onclick='javascript:walkTo(\"" + station.id +"\")'>" +
-            "<td class = 'stationInTableName stationInTableCell' style='color: " + color + "'>" + station.displayName + 
-            "</td><td class = 'stationInTableCell'><img src='greenbike.png' width='17' height='17' />" + bikes +
-            "</td><td class ='stationInTableCell'><img src='docks.png' width='17' height='17' />" + docks +
-            "</td><td class='stationInTableCell'><img src='walk.gif' width='17' height='17' />" + station.distance + ' מ\'</td></tr>');
-        $('#stationDistanceTable').append(line);
+    $('#stationDistanceTable').html('');
+    for (var i=0; i < Math.min(4, distanceSortedStations.length); ++i) {
+      var station = distanceSortedStations[i];
+      var color;
+      var bikes = stationsInfo[station.id].available_bikes;
+      var docks = stationsInfo[station.id].available_docks;
+      if (bikes == 0) {
+        color = 'red';
+      } else if (bikes <= 2) {
+        color ='orange';
+      } else {
+        color = 'green';
       }
+      var line = $("<tr class='stationInTable' onclick='javascript:walkTo(\"" + station.id +"\")'>" +
+          "<td class = 'stationInTableName stationInTableCell' style='color: " + color + "'>" + station.displayName + 
+          "</td><td class = 'stationInTableCell'><img src='greenbike.png' width='17' height='17' />" + bikes +
+          "</td><td class ='stationInTableCell'><img src='docks.png' width='17' height='17' />" + docks +
+          "</td><td class='stationInTableCell'><img src='walk.gif' width='17' height='17' />" + station.distance + ' מ\'</td></tr>');
+      $('#stationDistanceTable').append(line);
+    }
+    $('#stationDistanceSpinner').hide();
   }
 
   function populateStationScores(scoreSortedStations) {
@@ -571,12 +585,12 @@
 
   function showSpinner(show) {
     if (show) {
-      $('#mapTitle').hide();
-      $('#spinner').show(); 
+      spinnerCount++;
     } else {
-      $('#mapTitle').show();
-      $('#spinner').hide(); 
+      spinnerCount = Math.max(0, spinnerCount-1);
     }
+    $('#spinner').toggle(!!spinnerCount);
+    $('#mapTitle').toggle(!spinnerCount);
   }
 
   function getUserLocation() {
@@ -610,26 +624,27 @@
     }
   }
 
-  function setSection(whatToShow) {
+  function setSection(newSection) {
+    currentSection = newSection;
     var sectionToDiv = {'loading': 'loadingDiv', 'map': 'mapDiv', 'stationRanking': 'stationRankingDiv',
                         'stationRankingMap' : 'mapDiv', 'about': 'aboutDiv', 
                         'stationDistance': 'stationDistanceDiv'};
-    if (!whatToShow in sectionToDiv) {
-      alert('error, could not find ' + whatToShow + ' in sectionToDiv');
+    if (!newSection in sectionToDiv) {
+      alert('error, could not find ' + newSection + ' in sectionToDiv');
     }
     for (section in sectionToDiv) {
       var div = sectionToDiv[section];
       var section = sectionToDiv[section];
       $('#' + div).hide();
     }
-    $('#' + sectionToDiv[whatToShow]).show();
-    updateHash(whatToShow, true);
+    $('#' + sectionToDiv[newSection]).show();
+    updateHash(newSection, true);
     google.maps.event.trigger(map, 'resize');
     hidePrediction();
   }
 
   function getSection() {
-    return location.hash ? location.hash.substring(1) : '';
+    return currentSection;
   }
 
   function loadStationsFromWeb() {
@@ -638,7 +653,7 @@
 
     readRowFromSpreadsheet(LOCATIONS_ROW_ID, 'stationLocationsCallback');
     readRowFromSpreadsheet(NAMES_ROW_ID, 'stationNamesCallback');
-    getCurrentStationsStatus();
+    fetchCurrentStationsStatus();
   }
 
   function initialize() {
@@ -705,7 +720,7 @@
 		var mapTitle = $('<div>');
 		mapTitle.css({'color': 'black', 'font-weight': 'bold', 'font-size': 'medium', 'width': '180px' });
 		mapTitle.attr('id', 'mapTitle');
-    mapTitle.click(getCurrentStationsStatus);
+    mapTitle.click(getCurrentStationStatus);
 
     var imageDiv = $('<div>');
     imageDiv.css({'float':'right'});
@@ -714,7 +729,7 @@
     refreshImg.attr({'src': 'refresh.png', 'width': '21', 'height': '21', 'title':'רענן'});
     refreshImg.css({'vertical-align': 'middle', 'padding': '1px', 'border-right': 'solid black 1px', 
       'float': 'left'});
-    refreshImg.click(getCurrentStationsStatus);
+    refreshImg.click(getCurrentStationStatus);
 
     var myLocImg = $('<img>');
     myLocImg.attr({'src': 'myloc.png', 'width': '21', 'height': '21', 'title':'המקום שלי'});
@@ -731,7 +746,7 @@
 		var myTextDiv = $('<div>');
 		myTextDiv.css({'background': 'white', 'opacity': 0.7, 'width': '190px', 'height' : '20px', 'border': 'solid black 1px', 'padding': '5px', 'text-align': 'center', 'cursor': 'pointer' });
 		var spinner = $('<img>');
-		spinner.attr({'src': 'spinner.gif', 'id': 'spinner', 'height': '19px', 'width': '19px'});
+		spinner.attr({'src': 'spinner.gif', 'id': 'spinner', 'height': '19px', 'width': '19px', 'display': 'none'});
     myTextDiv.append(refreshImg, imageDiv, mapTitle, spinner);
 
 		map.controls[google.maps.ControlPosition.TOP_LEFT].push(myTextDiv.get()[0]);
@@ -875,6 +890,9 @@ function showDivByLocationHash(hash) {
     case '#stationRanking':
       setSection("stationRanking"); 
       delink("aStationRanking");
+      break;
+    case '#stationDistance':
+      setSection('stationDistance');
       break;
     default:
       if (hash.indexOf('#time') == 0) { 
