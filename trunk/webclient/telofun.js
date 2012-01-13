@@ -345,7 +345,11 @@
     for (id in currentStatus) {
       var status = currentStatus[id];
       var station = getOrCreateStationInfo(id);
-      
+
+      if (status == -1) {
+        continue;
+      }
+     
       station.available_bikes = status % 100;
       station.available_docks = Math.floor(status / 100);
       if (station.stats) {
@@ -353,7 +357,7 @@
       }
     }
     showSpinner(false);
-    bikeStatusLoaded = true;
+    bikeStatusLoaded = new Date();
     // Update UI only if we're still on this tab.
     if (getSection() != 'stationRankingMap' && getSection().indexOf('time') == -1) {
       resetInfoWindows();
@@ -366,7 +370,6 @@
     if (!namesLoaded || !locationsLoaded || !bikeStatusLoaded) {
       return;
     }
-    getStationRanking();
     for (id in stations) {
       var station = stationsInfo[id];
       var image;
@@ -452,10 +455,9 @@
       station.lng = parseFloat(longLats[id].split(';')[1]); 
       station.latLng = new google.maps.LatLng(station.lat, station.lng);
     }
-    locationsLoaded = true;
-    if (namesLoaded) {
-      maybePrepareMap();
-    }
+    locationsLoaded = new Date();
+    getStationRanking();
+    maybePrepareMap();
   }
 
   function stationNamesCallback(stationsInfo) {
@@ -474,10 +476,8 @@
       }
       station.displayName = names[id];
     }
-    namesLoaded = true;
-    if (locationsLoaded) {
-      maybePrepareMap();
-    }
+    namesLoaded = new Date();
+    maybePrepareMap();
   }
 
   function populateStationDistanceTable() {
@@ -513,10 +513,10 @@
       if (i == 0) {
         img = 'green.png';
         title = 'תחנות סבבה';
-      } else if (i == Math.round(0.25 * scoreSortedStations.length)) {
+      } else if (i == Math.ceil(0.25 * scoreSortedStations.length)) {
         img = 'yellow.gif';
         title = 'תחנות בינוניות';
-      } else if (i == Math.round(0.75 * scoreSortedStations.length)) {
+      } else if (i == Math.ceil(0.75 * scoreSortedStations.length)) {
         img = 'red.gif';
         title = 'תחנות מעפנות';
       }
@@ -535,9 +535,13 @@
     for (var i = 0; i < scoreSortedStations.length; ++i) {
       var station = stations[scoreSortedStations[i].id];
       var marker = stationsInfo[scoreSortedStations[i].id].marker;
-      var file = (i <= numStations * 0.25 ? 'green.png' : (i <= 0.75 * numStations ? 'yellow.gif': 'red.gif'));
-      marker.setIcon(new google.maps.MarkerImage(file, null, null, null, new google.maps.Size(20, 20)));
+      var file = (i < numStations * 0.25 ? 'green.png' : (i < 0.75 * numStations ? 'yellow.gif': 'red.gif'));
+      var size = getMarkerSizeForZoomLevel();
+      marker.setIcon(new google.maps.MarkerImage(file, null, null, null, new google.maps.Size(size, size)));
       marker.setTitle('התחנה בעייתית ' + Math.round(100 - station.score) + '% מהזמן');
+      var infowindow = stationsInfo[scoreSortedStations[i].id].infowindow;
+      $(infowindow.getContent()).find('#stats').text('התחנה בעייתית ' + Math.round(100 - station.score) + '% מהזמן');
+      $(infowindow.getContent()).find('#stats').show();
     }
     // Update other map features.
     showLegend('ranking');
@@ -698,7 +702,7 @@
     });
 
     google.maps.event.addListener(map, 'zoom_changed', function() {
-        var size = map.getZoom() <= 13 ? 18 : (map.getZoom <= 16 ? 24 : 36);
+        var size = getMarkerSizeForZoomLevel();
         if (oldSize == size) {
           return;  // no need to change the size of the icons.
         }
@@ -813,8 +817,8 @@ function getStationRanking() {
   if (scoresLoaded) {
     return;
   }
-  scoresLoaded = true;
-  var STATION_RANKING_ROW_ID = '20ax0j';
+  scoresLoaded = new Date();
+  var STATION_RANKING_ROW_ID = '209ig2';
   readRowFromSpreadsheet(STATION_RANKING_ROW_ID, 'stationRankingCallback');
 }
 
@@ -928,4 +932,8 @@ function showLegend(legend) {
       $('.currentBikesLegend').hide();
       break;
   }
+}
+
+function getMarkerSizeForZoomLevel() {
+  return (map.getZoom() <= 13 ? 18 : (map.getZoom <= 16 ? 24 : 36));
 }
