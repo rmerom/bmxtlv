@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/relativeLayout1"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#FFFFFF" >
+
+    <TextView
+        android:id="@+id/listTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentTop="true"
+        android:maxWidth="250dp"
+        android:paddingRight="10dp"
+        android:paddingTop="8dp"
+        android:text="שם תחנה"
+        android:textColor="#000000"
+        android:textSize="22dp" android:gravity="right" android:height="35dp"/>
+
+    <TextView
+        android:id="@+id/listBikeLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
+        android:layout_below="@+id/listTitle"
+        android:paddingBottom="8dp"
+        android:paddingRight="10dp"
+        android:text="אופניים:"
+        android:textColor="#666666"
+        android:textSize="16dp" />
+
+    <TextView
+        android:id="@+id/listBikeCount"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@+id/listBikeLabel"
+        android:layout_below="@+id/title"
+        android:layout_toLeftOf="@+id/listBikeLabel"
+        android:paddingBottom="8dp"
+        android:paddingLeft="5dp"
+        android:paddingRight="5dp"
+        android:text="0"
+        android:textColor="#666666"
+        android:textSize="16dp" />
+
+    <TextView
+        android:id="@+id/listDockLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@+id/listBikeCount"
+        android:layout_toLeftOf="@+id/listBikeCount"
+        android:paddingBottom="8dp"
+        android:text="עמדות:"
+        android:textColor="#666666"
+        android:textSize="16dp" />
+
+    <TextView
+        android:id="@+id/listDockCount"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@+id/listDockLabel"
+        android:layout_toLeftOf="@+id/listDockLabel"
+        android:paddingBottom="8dp"
+        android:paddingLeft="5dp"
+        android:paddingRight="5dp"
+        android:text="0"
+        android:textColor="#666666"
+        android:textSize="16dp" />
+
+    <LinearLayout
+        android:id="@+id/linearLayout1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom ="@+id/listBikeLabel"
+        android:layout_alignParentLeft="true"
+        android:layout_marginLeft="16dp"
+        android:orientation="vertical" android:paddingBottom="8dp">
+
+        <ImageView
+            android:id="@+id/listDirectionImage"
+            android:layout_width="25dp"
+            android:layout_height="25dp"
+            android:layout_gravity="center_horizontal"
+            android:src="@drawable/ic_direction" />
+
+        <TextView
+            android:id="@+id/listDistance"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:text="100m"
+            android:textColor="#666666"
+            android:textSize="12dp" />
+    </LinearLayout>
+
+</RelativeLayout>

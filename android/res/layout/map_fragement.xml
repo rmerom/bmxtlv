@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/relativeLayout1"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent" >
+
+    <com.google.android.maps.MapView
+        android:id="@+id/mapview"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:apiKey="0lNWfDzK9KZ144PEFsi5aRviEeE6Bc2iHQZSMwQ"
+        android:clickable="true" >
+    </com.google.android.maps.MapView>
+
+    <ImageButton
+        android:id="@+id/centerMyLocationButton"
+        android:layout_alignParentBottom="true"
+        android:src="@drawable/ic_my_location" 
+        android:background="@android:color/transparent" android:layout_alignParentRight="true" android:layout_width="50dp" android:layout_height="50dp"/>
+
+</RelativeLayout>
