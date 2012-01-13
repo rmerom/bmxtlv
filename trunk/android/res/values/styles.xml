@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+<!-- No Activity DropShadow -->
+<style name="Theme.NoTitleOrDrop" parent="@android:style/Theme.NoTitleBar">
+    <item name="android:windowContentOverlay">@null</item>
+</style>
+</resources>
