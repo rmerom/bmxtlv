@@ -8,7 +8,7 @@
         android:id="@+id/mapview"
         android:layout_width="fill_parent"
         android:layout_height="fill_parent"
-        android:apiKey="0lNWfDzK9KZ144PEFsi5aRviEeE6Bc2iHQZSMwQ"
+        android:apiKey="0juUgxPXH-dhQmSQz1XDj0yqTJL5j70SNoXCizA"
         android:clickable="true" >
     </com.google.android.maps.MapView>
 
@@ -16,6 +16,6 @@
         android:id="@+id/centerMyLocationButton"
         android:layout_alignParentBottom="true"
         android:src="@drawable/ic_my_location" 
-        android:background="@android:color/transparent" android:layout_alignParentRight="true" android:layout_width="50dp" android:layout_height="50dp"/>
+        android:background="@android:color/transparent" android:layout_alignParentRight="true" android:layout_width="61dp" android:layout_height="61dp"/>
 
 </RelativeLayout>

@@ -14,6 +14,7 @@ import android.widget.ImageButton;
 import android.widget.Toast;
 
 import com.google.android.maps.GeoPoint;
+import com.google.android.maps.ItemizedOverlay;
 import com.google.android.maps.MapController;
 import com.google.android.maps.MapView;
 import com.google.android.maps.MyLocationOverlay;
@@ -32,7 +33,6 @@ public class StationMapFragment extends Fragment {
 		mMapViewContainer = LayoutInflater.from(context).inflate(R.layout.map_fragement, null);
 		mMapView = (MapView)mMapViewContainer.findViewById( R.id.mapview );
 		mStationManager = stationManager;
-		//mMapView = mapView;
 		mContext = context;
 		mMapController = mMapView.getController();
 
@@ -89,52 +89,8 @@ public class StationMapFragment extends Fragment {
 	}
 
 	public void drawStationsOnMap() {		
-		Drawable greenbike = this.getResources().getDrawable(R.drawable.greenbike);
-		greenbike.setBounds(0, 0, greenbike.getIntrinsicWidth(), greenbike.getIntrinsicHeight());
-		Drawable nobikes = this.getResources().getDrawable(R.drawable.nobikes);
-		nobikes.setBounds(0, 0, nobikes.getIntrinsicWidth(), nobikes.getIntrinsicHeight());
-		Drawable nodocks = this.getResources().getDrawable(R.drawable.nodocks);
-		nodocks.setBounds(0, 0, nodocks.getIntrinsicWidth(), nodocks.getIntrinsicHeight());
-		Drawable dunno = this.getResources().getDrawable(R.drawable.dunno);
-		dunno.setBounds(0, 0, dunno.getIntrinsicWidth(), dunno.getIntrinsicHeight());
-		Drawable onebike = this.getResources().getDrawable(R.drawable.onebike);
-		onebike.setBounds(0, 0, onebike.getIntrinsicWidth(), onebike.getIntrinsicHeight());
-		Drawable onedock = this.getResources().getDrawable(R.drawable.onedock);
-		onedock.setBounds(0, 0, onedock.getIntrinsicWidth(), onedock.getIntrinsicHeight());
-		StationOverlay stationOverlay = new StationOverlay(greenbike, mContext);
-
-		for (Station station : mStationManager.getStations()) {
-			GeoPoint stationPoint = new GeoPoint(station.getLatitude() , station.getLongtitude());
-			String stationSnippet = "Free bikes: " + station.getAvailableBikes() + "\n" +
-					"Free docks: " + station.getAvailableDocks();
-			OverlayItem overlayitem = new OverlayItem(stationPoint, station.getName(), stationSnippet);
-
-			switch (station.getStatus()) {
-			case OK:
-				overlayitem.setMarker(greenbike);
-				break;
-			case NO_BIKES:
-				overlayitem.setMarker(nobikes);
-				break;
-			case NO_DOCKS:
-				overlayitem.setMarker(nodocks);
-				break;
-			case ONE_BIKE:
-				overlayitem.setMarker(onebike);
-				break;
-			case ONE_DOCK:
-				overlayitem.setMarker(onedock);
-				break;
-			case NO_INFO:
-				overlayitem.setMarker(dunno);
-				break;
-			default:
-				overlayitem.setMarker(dunno);
-				break;
-			}
-			stationOverlay.addOverlay(overlayitem);
-		}
-
+		Drawable greenbike = this.getResources().getDrawable(R.drawable.ic_station_ok);
+		StationOverlay stationOverlay = new StationOverlay(greenbike, mContext, mStationManager.getStations());	
 		List<Overlay> mapOverlays = mMapView.getOverlays();
 		mapOverlays.add(stationOverlay);
 		mMapView.postInvalidate();
