@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/linearLayout1"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:background="#FFFFFF">
+
+    <LinearLayout
+        android:id="@+id/dialogBikeLayout"
+        android:layout_width="wrap_content"
+        android:layout_height="40dp"
+        
+         android:layout_alignParentRight="true">
+
+        <TextView
+            android:id="@+id/textView1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="10" />
+
+        <TextView
+            android:id="@+id/dialogBikeCount"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="אופניים:" android:layout_marginLeft="10dp"/>
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/dialogDockLayout"
+        android:layout_width="wrap_content"
+        android:layout_height="40dp" android:layout_alignParentRight="true" android:layout_below="@id/dialogBikeLayout">
+
+        <TextView
+            android:id="@+id/textView3"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="8" />
+
+        <TextView
+            android:id="@+id/dialgDockCount"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="תחנות:" android:layout_marginLeft="10dp"/>
+    </LinearLayout>
+
+</RelativeLayout>

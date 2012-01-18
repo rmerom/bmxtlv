@@ -17,7 +17,7 @@
             android:layout_height="32dp"
             android:layout_alignParentLeft="true"
             android:layout_centerVertical="true"
-            android:src="@drawable/greenbike" android:paddingRight="5dp" android:paddingLeft="5dp"/>
+            android:src="@drawable/ic_station_ok" android:paddingRight="5dp" android:paddingLeft="5dp"/>
 
         <TextView
             android:id="@+id/textView1"

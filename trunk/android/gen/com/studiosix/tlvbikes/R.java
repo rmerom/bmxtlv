@@ -14,48 +14,52 @@ public final class R {
         public static final int actionbar_compat_item=0x7f020000;
         public static final int actionbar_compat_item_focused=0x7f020001;
         public static final int actionbar_compat_item_pressed=0x7f020002;
-        public static final int androidmarker=0x7f020003;
-        public static final int app_header_selector=0x7f020004;
-        public static final int dunno=0x7f020005;
-        public static final int greenbike=0x7f020006;
-        public static final int ic_action_list=0x7f020007;
-        public static final int ic_action_refresh=0x7f020008;
-        public static final int ic_direction=0x7f020009;
-        public static final int ic_launcher=0x7f02000a;
-        public static final int ic_list=0x7f02000b;
-        public static final int ic_map=0x7f02000c;
-        public static final int ic_my_location=0x7f02000d;
-        public static final int ic_mylocation=0x7f02000e;
-        public static final int nobikes=0x7f02000f;
-        public static final int nodocks=0x7f020010;
-        public static final int onebike=0x7f020011;
-        public static final int onedock=0x7f020012;
+        public static final int app_header_selector=0x7f020003;
+        public static final int ic_action_list=0x7f020004;
+        public static final int ic_action_map=0x7f020005;
+        public static final int ic_action_refresh=0x7f020006;
+        public static final int ic_direction=0x7f020007;
+        public static final int ic_launcher=0x7f020008;
+        public static final int ic_map=0x7f020009;
+        public static final int ic_my_location=0x7f02000a;
+        public static final int ic_station_few_bikes=0x7f02000b;
+        public static final int ic_station_few_docks=0x7f02000c;
+        public static final int ic_station_no_bikes=0x7f02000d;
+        public static final int ic_station_no_docks=0x7f02000e;
+        public static final int ic_station_ok=0x7f02000f;
+        public static final int ic_station_unknown=0x7f020010;
     }
     public static final class id {
         public static final int border=0x7f060006;
         public static final int centerMyLocationButton=0x7f06000a;
+        public static final int dialgDockCount=0x7f06000f;
+        public static final int dialogBikeCount=0x7f06000c;
+        public static final int dialogBikeLayout=0x7f06000b;
+        public static final int dialogDockLayout=0x7f06000d;
         public static final int fragmentContainer=0x7f060007;
         public static final int linearLayout1=0x7f060000;
         public static final int linearLayout2=0x7f060001;
-        public static final int listBikeCount=0x7f06000d;
-        public static final int listBikeLabel=0x7f06000c;
-        public static final int listDirectionImage=0x7f060011;
-        public static final int listDistance=0x7f060012;
-        public static final int listDockCount=0x7f060010;
-        public static final int listDockLabel=0x7f06000f;
-        public static final int listTitle=0x7f06000b;
+        public static final int listBikeCount=0x7f060012;
+        public static final int listBikeLabel=0x7f060011;
+        public static final int listDirectionImage=0x7f060016;
+        public static final int listDistance=0x7f060017;
+        public static final int listDockCount=0x7f060015;
+        public static final int listDockLabel=0x7f060014;
+        public static final int listTitle=0x7f060010;
         public static final int logo=0x7f060002;
         public static final int mapview=0x7f060009;
         public static final int refreshButton=0x7f060004;
         public static final int relativeLayout1=0x7f060008;
         public static final int textView1=0x7f060003;
-        public static final int title=0x7f06000e;
+        public static final int textView3=0x7f06000e;
+        public static final int title=0x7f060013;
         public static final int viewButton=0x7f060005;
     }
     public static final class layout {
         public static final int main=0x7f030000;
         public static final int map_fragement=0x7f030001;
-        public static final int station_list_item=0x7f030002;
+        public static final int station_dialog=0x7f030002;
+        public static final int station_list_item=0x7f030003;
     }
     public static final class string {
         public static final int app_name=0x7f040000;

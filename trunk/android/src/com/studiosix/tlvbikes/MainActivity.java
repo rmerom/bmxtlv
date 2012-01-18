@@ -66,7 +66,6 @@ public class MainActivity extends FragmentActivity {
 			}
 		});
 
-		
 		// Set up location
 		/*LocationManager locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
 		LocationListener locationListener = new LocationListener() {

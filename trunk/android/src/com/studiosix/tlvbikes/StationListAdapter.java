@@ -55,11 +55,11 @@ public class StationListAdapter extends BaseAdapter {
         stationBikesView.setText(String.valueOf(availableBikes));
         TextView stationBikesLabelView = (TextView) itemLayout.findViewById(R.id.listBikeLabel);
         if (availableBikes == 0) {
-        	stationBikesView.setTextColor(Color.RED);
-        	stationBikesLabelView.setTextColor(Color.RED);
+        	stationBikesView.setTextColor(Color.parseColor("#CC0000"));
+        	stationBikesLabelView.setTextColor(Color.parseColor("#CC0000"));
         } else if (availableBikes < 4) {
-        	stationBikesView.setTextColor(Color.parseColor("#FFCC00"));
-        	stationBikesLabelView.setTextColor(Color.parseColor("#FFCC00"));
+        	stationBikesView.setTextColor(Color.parseColor("#FF8800"));
+        	stationBikesLabelView.setTextColor(Color.parseColor("#FF8800"));
         }
         
         int availableDocks = station.getAvailableDocks();
@@ -67,11 +67,11 @@ public class StationListAdapter extends BaseAdapter {
         stationDocksView.setText(String.valueOf(availableDocks));
         TextView stationDocksLabelView = (TextView) itemLayout.findViewById(R.id.listDockLabel);
         if (availableDocks == 0) {
-        	stationDocksView.setTextColor(Color.RED);
-        	stationDocksLabelView.setTextColor(Color.RED);
+        	stationDocksView.setTextColor(Color.parseColor("#CC0000"));
+        	stationDocksLabelView.setTextColor(Color.parseColor("#CC0000"));
         } else if (availableDocks < 4) {
-        	stationDocksView.setTextColor(Color.parseColor("#FFCC00"));
-        	stationDocksLabelView.setTextColor(Color.parseColor("#FFCC00"));
+        	stationDocksView.setTextColor(Color.parseColor("#FF8800"));
+        	stationDocksLabelView.setTextColor(Color.parseColor("#FF8800"));
         }
         
         TextView distanceView = (TextView) itemLayout.findViewById(R.id.listDistance);
