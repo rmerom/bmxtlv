@@ -67,7 +67,7 @@ public class StationListFragment extends ListFragment implements SensorEventList
 			mGravity = event.values;
 		if (event.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD)
 			mGeomagnetic = event.values;
-		if (mGravity != null && mGeomagnetic != null) {
+		/*if (mGravity != null && mGeomagnetic != null) {
 			float L[] = new float[9];
 			float I[] = new float[9];
 			boolean success = SensorManager.getRotationMatrix(L, I, mGravity, mGeomagnetic);
@@ -113,6 +113,6 @@ public class StationListFragment extends ListFragment implements SensorEventList
 			        arrow.setImageBitmap(bMapRotate);
 				}
 			}
-		}
+		}*/
 	}
 }
