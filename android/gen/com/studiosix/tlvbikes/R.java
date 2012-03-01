@@ -18,16 +18,17 @@ public final class R {
         public static final int ic_action_list=0x7f020004;
         public static final int ic_action_map=0x7f020005;
         public static final int ic_action_refresh=0x7f020006;
-        public static final int ic_direction=0x7f020007;
-        public static final int ic_launcher=0x7f020008;
-        public static final int ic_map=0x7f020009;
-        public static final int ic_my_location=0x7f02000a;
-        public static final int ic_station_few_bikes=0x7f02000b;
-        public static final int ic_station_few_docks=0x7f02000c;
-        public static final int ic_station_no_bikes=0x7f02000d;
-        public static final int ic_station_no_docks=0x7f02000e;
-        public static final int ic_station_ok=0x7f02000f;
-        public static final int ic_station_unknown=0x7f020010;
+        public static final int ic_app=0x7f020007;
+        public static final int ic_direction=0x7f020008;
+        public static final int ic_launcher=0x7f020009;
+        public static final int ic_map=0x7f02000a;
+        public static final int ic_my_location=0x7f02000b;
+        public static final int ic_station_few_bikes=0x7f02000c;
+        public static final int ic_station_few_docks=0x7f02000d;
+        public static final int ic_station_no_bikes=0x7f02000e;
+        public static final int ic_station_no_docks=0x7f02000f;
+        public static final int ic_station_ok=0x7f020010;
+        public static final int ic_station_unknown=0x7f020011;
     }
     public static final class id {
         public static final int border=0x7f060006;

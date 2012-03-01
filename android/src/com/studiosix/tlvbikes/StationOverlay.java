@@ -43,8 +43,8 @@ public class StationOverlay extends ItemizedOverlay<OverlayItem> {
 		// Add stations
 		for (Station station : stations) {
 			GeoPoint stationPoint = new GeoPoint(station.getLatitude() , station.getLongtitude());
-			String stationSnippet = "Free bikes: " + station.getAvailableBikes() + "\n" +
-					"Free docks: " + station.getAvailableDocks();
+			String stationSnippet = "אופניים: " + station.getAvailableBikes() + "\n" +
+					"תחנות: " + station.getAvailableDocks();
 			OverlayItem overlayitem = new OverlayItem(stationPoint, station.getName(), stationSnippet);
 
 			switch (station.getStatus()) {
