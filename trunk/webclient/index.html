@@ -15,9 +15,9 @@
 <meta property="og:site_name" content="TelOFast" />
 <meta property="fb:admins" content="544108348" />
 <meta name="title" content="Tel-O-Fast" />
-<meta name="description" content="אתר התל אופן שלי" />
+<meta name="description" content="telofast - אתר התל אופן שלי" />
 <link rel="image_src" type='image/png' href="http://telofast.com/telofun/logo.gif" />
-<link rel="icon" type='image/png' href="http://telofast.com/telofun/favicon.ico" />
+<link rel="icon" type='image/png' href="http://telofast.com/telofun/static/station_ok.png" />
 <style type="text/css">
   html { height: 100% }
   body { height: 100%; margin: 0; padding: 0 }
@@ -78,15 +78,19 @@
 		    </td>
 		    <td id='legend' style="vertical-align: top; display:none">
 		      <span style='font-family: arial; font-size: small' id='regularLegend'>
-		        <p><img src='greenbike.png'/ width='26' height='26' style='vertical-align: middle'> <span id='station_ok'> תחנה תקינה </span></p>
-		        <p><img src='nobikes_0.png' width='26' height='26' style='vertical-align: middle'/> <span class='currentBikesLegend'><img src='nobikes_1.png' width='26' height='26' style='vertical-align: middle'/> <img src='nobikes_2.png' width='26' height='26' style='vertical-align: middle'/> </span><span id='station_nobikes'></span></p>
-		        <p><img src='nodocks_0.png' width='26' height='26' style='vertical-align: middle'/> <span class='currentBikesLegend'><img src='nodocks_1.png' width='26' height='26' style='vertical-align: middle'/> <img src='nodocks_2.png' width='26' height='26' style='vertical-align: middle'/> </span><span id='station_nodocks'></span></p>
-		        <p><img src='dunno.png' width='26' height='26' style='vertical-align: middle'/> <span id='station_noinfo'></span></p>
+		        <p><img src='static/station_ok.png' width='26' height='34' style='vertical-align: middle'> <span id='station_ok'> תחנה תקינה </span></p>
+		        <p><img src='static/nobikes.png' width='26' height='34' style='vertical-align: middle'/> <span class='currentBikesLegend'> <img src='static/nearly_nobikes.png' width='26' height='34' style='vertical-align: middle'/> </span><span id='station_nobikes'></span></p>
+		        <p><img src='static/nodocks.png' width='26' height='34' style='vertical-align: middle'/> <span class='currentBikesLegend'><img src='static/nearly_nodocks.png' width='26' height='34' style='vertical-align: middle'/>  </span><span id='station_nodocks'></span></p>
+		        <p><img src='static/station_unknown.png' width='26' height='34' style='vertical-align: middle'/> <span id='station_noinfo'></span></p>
 		      </span>
 		      <span style='font-family: arial; font-size: small; display:none' id='rankingLegend'>
-		        <p><img src='green.png'/ width='26' height='26' style='vertical-align: middle'> תחנה סבבה </p>
-		        <p><img src='yellow.gif' width='26' height='26' style='vertical-align: middle'/> תחנה בינונית </p>  		        <p><img src='red.gif' width='26' height='26' style='vertical-align: middle'/> תחנה מעפנה </p>
+		        <p><img src='green.png'/ width='26' height='26' style='vertical-align: middle'> תחנה ברבעון הטוב ביותר </p>
+		        <p><img src='yellow.gif' width='26' height='26' style='vertical-align: middle'/> תחנה בינונית </p>  		        <p><img src='red.gif' width='26' height='26' style='vertical-align: middle'/> תחנה ברבעון הגרוע ביותר </p>
+		        <p><img src='gray.gif' width='26' height='26' style='vertical-align: middle'/> תחנה לא מופעלת או שאין פרטים </p>
 		      </span>
+          <span style='font-family: arial; font-size: small;'>
+            <p><img src='static/bikelane.png' width='32' height='18' style='vertical-align: middle' /> נתיב אופניים</p>
+          </span>
 		    </td></tr>
 		  </tbody>
 		 </table>
@@ -141,7 +145,15 @@
     <p>אגב, האתר הזה <b>מתאים גם לאנדרואיד ואייפון</b>, כשאתם בדרך - אתם מוזמנים לנסות!</p>
    <br/>
 		  <p>  תודה ורכיבה נעימה,</p>
-		  <p> מיכל, רן, רומן, ואורן (להלן צוות telofast)</p>
+		  <p> ליאור, רן, רומן, ואורן (להלן צוות telofast)</p>
+    <br/><br/>
+    <span style='font-size: small'> 
+      <span style='font-style: italic; text-decoration: underline'>מידע לגיקים</span>:<br/>
+      <b> התחזיות</b> נבנות מתוך מידע שנאסף בימים א-ה. 
+      <br/>
+      <b>ציוני התחנות</b> מחושבים (בקירוב) כאחוז מהזמן בו התחנה אינה ריקה/מלאה/תקולה, בימים א-ה בין השעות 6:00-10:00 ו- 15:00-20:00. תחנות שהופעלו לאחרונה מתחילות מציון נמוך ו"צוברות" ציונים טובים יותר ככל שעובר הזמן.
+    </span>
+    <br/><br/>
     </span>
     <a href='javascript:setSection("map")'>&lt;&lt; חזרה</a>
   </div>
