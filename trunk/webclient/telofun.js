@@ -430,7 +430,8 @@
     showSpinner(true);
     var script = document.createElement('script');
     script.setAttribute('type', 'text/javascript');
-    script.setAttribute('src', 'https://spreadsheets.google.com/feeds/list/0AoOjWPdv2TXodHMxSEVLR3VkeUtnWXBCY1pCV213Z2c/od6/public/basic?alt=json-in-script&callback=timelyCallback&start-index=' + baseRow + '&max-results=' + ROWS_PER_SAMPLE);
+
+    script.setAttribute('src', 'https://spreadsheets.google.com/feeds/list/0AoOjWPdv2TXodHlMTTFrakJKR2F6cldJTGktQnNXV0E/od6/public/basic?alt=json-in-script&callback=timelyCallback&start-index=' + baseRow + '&max-results=' + ROWS_PER_SAMPLE);
     $('head').append(script);
 
     $('#station_ok').text('תחנה תקינה בד"כ');
@@ -700,7 +701,11 @@
     };
     map = new google.maps.Map(document.getElementById('map_canvas'),
         mapOptions);
-    var kmlLayer = new google.maps.KmlLayer('http://maps.google.com/maps/ms?authuser=0&ie=UTF8&hl=en&oe=UTF8&vps=2&msa=0&output=kml&msid=200057351120568634149.0004b9e3ecc5e5e29875e', {clickable: false, preserveViewport: true});
+//    var kmlLayer = new google.maps.KmlLayer('http://maps.google.com/maps/ms?authuser=0&ie=UTF8&hl=en&oe=UTF8&vps=2&msa=0&output=kml&msid=200057351120568634149.0004b9e3ecc5e5e29875e', {clickable: false, preserveViewport: true});
+    var kmlLayer = new google.maps.KmlLayer('http://maps.google.com/maps/ms?authuser=0&vps=3&ie=UTF8&msa=0&output=kml&msid=200057351120568634149.0004b836e1c40597be249', {clickable: false, preserveViewport: true});
+
+
+
     kmlLayer.setMap(map);
     google.maps.event.addListener(map, 'tilesloaded', function() {
       $('#loadingDiv').remove();
@@ -810,9 +815,14 @@ function adjustToScreenSize() {
 }
 
 function readRowFromSpreadsheet(lineId, callback) {
-  var link = 
+//  var link = 
       'https://spreadsheets.google.com/feeds/list/0AoOjWPdv2TXodHMxSEVLR3VkeUtnWXBCY1pCV213Z2c/od6/public/basic/' + 
       lineId + '?alt=json-in-script&callback=' + callback;
+
+  var link = 
+      'https://spreadsheets.google.com/feeds/list/0AoOjWPdv2TXodHlMTTFrakJKR2F6cldJTGktQnNXV0E/od6/public/basic/' + 
+      lineId + '?alt=json-in-script&callback=' + callback;
+
   var script = $('<script>');
   script.attr({type: 'text/javascript', src: link});
   $('head').append(script);
