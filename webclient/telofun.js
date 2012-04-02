@@ -258,7 +258,7 @@
       }
 
       var station = stationsInfo[id];
-      changeMarkerUrl(station.marker, 'static/' + image);
+      changeMarkerUrlAndMaybeSize(station.marker, 'static/' + image);
       var content = (statsContent != '') ? (statsContent + ' בשעה זו') : '';
       $(station.infowindow.getContent()).find('#stats').html('<br/><span>'+content+'</span>');
       $(station.infowindow.getContent()).find('#stats').show();
@@ -267,20 +267,23 @@
     // Turn all unknown stations into a question mark.
     for (id in stations) {
       if (!(id in allKeys)) {
-        changeMarkerUrl(stationsInfo[id].marker, 'static/station_unknown.png'); 
+        changeMarkerUrlAndMaybeSize(stationsInfo[id].marker, 'static/station_unknown.png'); 
       }
     }
     showSpinner(false);
     showLegend('now');
   }
 
-  function changeMarkerUrl(marker, aUrl) {
+  function changeMarkerUrlAndMaybeSize(marker, aUrl, available_bikes) {
     if (!aUrl.indexOf) {
       alert(aUrl);
     }
     var oldIcon = marker.getIcon();
+    var newSize = available_bikes >= 0  // i.e. argument was passed.
+        ? getMarkerSizeForZoomLevel(available_bikes) 
+        : (oldIcon.scaledSize ? oldIcon.scaledSize : undefined);
     marker.setIcon(new google.maps.MarkerImage(
-        aUrl, undefined, undefined, undefined, oldIcon.scaledSize ? oldIcon.scaledSize : undefined));
+        aUrl, undefined, undefined, undefined, newSize));
   }
 
   function formatTime(updated) {
@@ -314,7 +317,7 @@
     var marker = new google.maps.Marker({
         position: stations[id] ? stations[id].latLng : undefined,
         title: stations[id] ? stations[id].displayName : undefined,
-        icon: new google.maps.MarkerImage('spinner.gif', undefined, undefined, undefined, new google.maps.Size(size.x, size.y))
+        icon: new google.maps.MarkerImage('spinner.gif', undefined, undefined, undefined, size)
     });
     station.marker = marker;
     marker.setMap(map);
@@ -387,7 +390,7 @@
       } else {
         image = 'station_ok.png';
       }
-      changeMarkerUrl(station.marker, 'static/' + image);
+      changeMarkerUrlAndMaybeSize(station.marker, 'static/' + image, station.available_bikes);
     }
   }
 
@@ -406,7 +409,7 @@
     showSpinner(true);
     for (id in stationsInfo) {
       if (stationsInfo[id].marker) {
-        changeMarkerUrl(stationsInfo[id].marker, 'spinner.gif'); 
+        changeMarkerUrlAndMaybeSize(stationsInfo[id].marker, 'spinner.gif'); 
       }
     }
 
@@ -425,7 +428,7 @@
     var baseRow = START_ROW + ROWS_PER_SAMPLE * time * SAMPLES_PER_HOUR - 1;  // first row considered headers
 
     for (id in stations) {
-      changeMarkerUrl(stationsInfo[id].marker, 'spinner.gif');
+      changeMarkerUrlAndMaybeSize(stationsInfo[id].marker, 'spinner.gif');
     }
     showSpinner(true);
     var script = document.createElement('script');
@@ -557,7 +560,7 @@
           ? 'gray.gif' 
           : (i < numStations * 0.25 ? 'green.png' : (i < 0.75 * numStations ? 'yellow.gif': 'red.gif'));
       var size = getMarkerSizeForZoomLevel();
-      marker.setIcon(new google.maps.MarkerImage(file, undefined, undefined, undefined, new google.maps.Size(size.x, size.y)));
+      marker.setIcon(new google.maps.MarkerImage(file, undefined, undefined, undefined, size));
       var infoText;
       if (station.score > 0.0) {
         infoText = 'התחנה בעייתית ' + Math.round(100 - station.score) + '% מהזמן';
@@ -732,16 +735,12 @@
     });
 
     google.maps.event.addListener(map, 'zoom_changed', function() {
-        var size = getMarkerSizeForZoomLevel();
-        if (oldSize && oldSize.x == size.x && oldSize.y == size.y) {
-          return;  // no need to change the size of the icons.
-        }
-        oldSize = size;
 
         for (id in stationsInfo) {
           var oldIcon = stationsInfo[id].marker.getIcon();
+          var size = getMarkerSizeForZoomLevel(stationsInfo[id].available_bikes);
           stationsInfo[id].marker.setIcon(
-              new google.maps.MarkerImage(oldIcon.url, undefined, undefined, undefined, new google.maps.Size(size.x, size.y)));
+              new google.maps.MarkerImage(oldIcon.url, undefined, undefined, undefined, size));
         }
 		});
 
@@ -970,9 +969,14 @@ function showLegend(legend) {
   }
 }
 
-function getMarkerSizeForZoomLevel() {
+function getMarkerSizeForZoomLevel(available_bikes) {
   var size = {};
-  size.x = (map.getZoom() <= 13 ? 18 : (map.getZoom() <= 16 ? 24 : 36));;
-  size.y = Math.round(size.x * 1.3);
-  return size;
+  var xSize = (map.getZoom() <= 13 ? 18 : (map.getZoom() <= 16 ? 24 : 36));
+
+  if (available_bikes >=0) {
+    xSize += Math.round((available_bikes - 6) / 1.25);
+  }
+  size.x = xSize;
+  size.y = Math.round(xSize * 1.3);
+  return new google.maps.Size(size.x, size.y);
 }
