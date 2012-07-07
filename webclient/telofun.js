@@ -515,7 +515,7 @@
 
   function populateStationScores(scoreSortedStations) {
     $('#stationScoreTable').html('');
-    var numStations;
+    var numStations = scoreSortedStations.length;
     for (var i = 0; i < scoreSortedStations.length; ++i) {
        if (scoreSortedStations[i].score == 0.0) {
          numStations = i;
@@ -546,7 +546,7 @@
   }
 
   function updateMapForStationRanking() {
-    var numStations;
+    var numStations = scoreSortedStations.length;
     for (var i = 0; i < scoreSortedStations.length; ++i) {
        if (scoreSortedStations[i].score == 0.0) {
          numStations = i;
