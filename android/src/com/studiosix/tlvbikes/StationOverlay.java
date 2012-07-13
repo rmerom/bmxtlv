@@ -5,6 +5,7 @@ import java.util.Collection;
 
 import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.graphics.drawable.Drawable;
 
 import com.google.android.maps.GeoPoint;
@@ -19,8 +20,12 @@ public class StationOverlay extends ItemizedOverlay<OverlayItem> {
 	public StationOverlay(Drawable defaultMarker) {
 		super(boundCenterBottom(defaultMarker));
 	}
+	
+	public void clear() {
+		mOverlays.clear();
+	}
 
-	public StationOverlay(Drawable defaultMarker, Context context, Collection<Station> stations) {
+	public StationOverlay(Drawable defaultMarker, Context context) {
 		this(defaultMarker);
 		mContext = context;
 		
@@ -39,8 +44,9 @@ public class StationOverlay extends ItemizedOverlay<OverlayItem> {
 		onedock.setBounds(-width / 2, -height, width - (width / 2), 0);
 		dunno = mContext.getResources().getDrawable(R.drawable.ic_station_unknown);
 		dunno.setBounds(-width / 2, -height, width - (width / 2), 0);
+	}
 		
-		// Add stations
+	public void addStations(Collection<Station> stations) {
 		for (Station station : stations) {
 			GeoPoint stationPoint = new GeoPoint(station.getLatitude() , station.getLongtitude());
 			String stationSnippet = "אופניים: " + station.getAvailableBikes() + "\n" +
@@ -57,10 +63,10 @@ public class StationOverlay extends ItemizedOverlay<OverlayItem> {
 			case NO_DOCKS:
 				overlayitem.setMarker(nodocks);
 				break;
-			case ONE_BIKE:
+			case FEW_BIKES:
 				overlayitem.setMarker(onebike);
 				break;
-			case ONE_DOCK:
+			case FEW_DOCKS:
 				overlayitem.setMarker(onedock);
 				break;
 			case NO_INFO:
@@ -72,11 +78,12 @@ public class StationOverlay extends ItemizedOverlay<OverlayItem> {
 			}
 			addOverlay(overlayitem);
 		}
+		populate();
+
 	}
 
 	public void addOverlay(OverlayItem overlay) {
 		mOverlays.add(overlay);
-		populate();
 	}
 
 	@Override
@@ -90,11 +97,20 @@ public class StationOverlay extends ItemizedOverlay<OverlayItem> {
 	}
 
 	@Override
-	protected boolean onTap(int index) {
+	protected boolean onTap(final int index) {
 		OverlayItem item = mOverlays.get(index);
 		AlertDialog.Builder dialog = new AlertDialog.Builder(mContext);
 		dialog.setTitle(item.getTitle());
 		dialog.setMessage(item.getSnippet());
+		dialog.setPositiveButton("OK", null);
+		dialog.setNeutralButton("Directions", new DialogInterface.OnClickListener() {
+			public void onClick(DialogInterface dialog, int which) {
+				if (which == DialogInterface.BUTTON_NEUTRAL) {
+					GeoPoint point = mOverlays.get(index).getPoint(); 
+					Utils.navigateTo(mContext, point.getLatitudeE6(), point.getLongitudeE6());
+				}
+			}
+		});
 		dialog.show();
 		return true;
 		/*

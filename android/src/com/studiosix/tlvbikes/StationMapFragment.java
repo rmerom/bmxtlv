@@ -1,11 +1,11 @@
 package com.studiosix.tlvbikes;
 
-import java.util.List;
-
+import android.app.Activity;
 import android.content.Context;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -14,85 +14,122 @@ import android.widget.ImageButton;
 import android.widget.Toast;
 
 import com.google.android.maps.GeoPoint;
-import com.google.android.maps.ItemizedOverlay;
 import com.google.android.maps.MapController;
 import com.google.android.maps.MapView;
 import com.google.android.maps.MyLocationOverlay;
-import com.google.android.maps.Overlay;
-import com.google.android.maps.OverlayItem;
 
 public class StationMapFragment extends Fragment {
-	private View mMapViewContainer;
+	private View mRootView;
 	private MapView mMapView;
 	private MapController mMapController;
 	private MyLocationOverlay mMyLocationOverlay;
+	private StationOverlay mStationsOverlay;
 	private StationManager mStationManager;
 	private Context mContext;
 
-	public StationMapFragment(Context context, StationManager stationManager) {
-		mMapViewContainer = LayoutInflater.from(context).inflate(R.layout.map_fragement, null);
-		mMapView = (MapView)mMapViewContainer.findViewById( R.id.mapview );
-		mStationManager = stationManager;
-		mContext = context;
-		mMapController = mMapView.getController();
-
-		// Set up map
-		mMapView.setBuiltInZoomControls(false);
-		mMapController = mMapView.getController();
-		mMapController.animateTo(new GeoPoint(32066501, 34777822)); // Tel Aviv
-		mMapController.setZoom(15);
-		
-		// Set up user location
-		mMyLocationOverlay = new MyLocationOverlay(mContext, mMapView);
-		mMyLocationOverlay.runOnFirstFix(new Runnable() {
-			public void run() {
-				GeoPoint userLocation = mMyLocationOverlay.getMyLocation();
-				if (userLocation.getLatitudeE6() < 3213194 &&
-						userLocation.getLatitudeE6() > 32030381 &&
-						userLocation.getLongitudeE6()  < 34847946 &&
-						userLocation.getLongitudeE6() > 34739285) {
-					mMapController.animateTo(mMyLocationOverlay.getMyLocation());
-					mMapController.setZoom(20);
-				}
-				mStationManager.setUserLocation(userLocation);
-				mStationManager.setUserLocationNew(mMyLocationOverlay.getLastFix());
-			}
-		});
-		mMapView.getOverlays().add(mMyLocationOverlay);
-		mMapView.postInvalidate();
-		ImageButton centerMyLocationButton = (ImageButton)mMapViewContainer.findViewById(R.id.centerMyLocationButton);
-		centerMyLocationButton.setOnClickListener(new OnClickListener() {
-			public void onClick(View v) {
-				centerMapAroundUser();
-			}
-		});
+	public StationMapFragment() {
+	}
+	
+	@Override
+	public void onActivityCreated(Bundle arg0) {
+		Log.w("StationMapFragment", "onActvityCreated called");
+		super.onActivityCreated(arg0);
 	}
 
+
 	@Override
-	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-		super.onCreateView( inflater, container, savedInstanceState );
-
-		MainActivity mapActivity = (MainActivity) getActivity();		
-		mContext = mapActivity;
-
-		return mMapViewContainer;
+	public void onDestroy() {
+		super.onDestroy();
+		Log.w("StationMapFragment", "onDestroy called");
 	}
 
 	@Override
 	public void onDestroyView() {
+		Log.w("StationMapFragment", "onDestroyView called");
 		super.onDestroyView();
-
-		ViewGroup parentViewGroup = (ViewGroup) mMapViewContainer.getParent();
-		if( null != parentViewGroup ) {
-			parentViewGroup.removeView( mMapViewContainer );
+		if (mRootView.getParent() != null) {
+			((ViewGroup)mRootView.getParent()).removeView(mRootView);
 		}
 	}
 
+
+	@Override
+	public void onDetach() {
+		super.onDetach();
+		Log.w("StationMapFragment", "onDetach called");
+	}
+
+
+
+
+	@Override
+	public void onCreate(Bundle state) {
+		Log.w("StationMapFragment", "onCreate called");
+		mContext = getActivity();
+		super.onCreate(state);
+		
+	}
+	
+
+	@Override
+	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+		Log.w("StationMapFragment", "onCreateView called");
+		super.onCreateView(inflater, container, savedInstanceState);
+		if (mRootView == null) {
+			mRootView = LayoutInflater.from(getActivity()).inflate(R.layout.map_fragement, null, false);
+			mMapView = (MapView) mRootView.findViewById(R.id.mapview);
+			// Set up map
+			mMapView.setBuiltInZoomControls(false);
+			final GeoPoint defaultLocation = new GeoPoint(32066501, 34777822);  // Tel Aviv
+			mMapView.getController().setCenter(defaultLocation);
+
+			mMapController = mMapView.getController();
+			mMapController.setZoom(15);
+			// Set up user location
+			mMyLocationOverlay = new MyLocationOverlay(mContext, mMapView);
+			mMyLocationOverlay.runOnFirstFix(new Runnable() {
+				public void run() {
+					GeoPoint userLocation = mMyLocationOverlay.getMyLocation();
+					if (userLocation == null) {
+						return;
+					}
+					if (userLocation.getLatitudeE6() < 32131940 &&
+							userLocation.getLatitudeE6() > 32030381 &&
+							userLocation.getLongitudeE6()  < 34847946 &&
+							userLocation.getLongitudeE6() > 34739285) {
+						mMapController.animateTo(mMyLocationOverlay.getMyLocation());
+					}
+					mMapController.setZoom(17);
+					mStationManager.setUserLocation(userLocation);
+					mStationManager.setUserLocationNew(mMyLocationOverlay.getLastFix());
+				}
+			});
+			mMapView.getOverlays().add(mMyLocationOverlay);
+			ImageButton centerMyLocationButton = (ImageButton)mRootView.findViewById(R.id.centerMyLocationButton);
+			centerMyLocationButton.setOnClickListener(new OnClickListener() {
+				public void onClick(View v) {
+					centerMapAroundUser();
+				}
+			});
+			Drawable greenbike = this.getResources().getDrawable(R.drawable.ic_station_ok);
+			mStationsOverlay = new StationOverlay(greenbike, mContext);
+			mMapView.getOverlays().add(mStationsOverlay);
+		}
+
+		return mRootView;
+	}
+	
+	@Override
+	public void onAttach(Activity activity) {
+		Log.w("StationMapFragment", "onAttach called");
+
+		super.onAttach(activity);
+		mStationManager = ((HasStationManager) activity).getStationManager();
+	}
+
 	public void drawStationsOnMap() {		
-		Drawable greenbike = this.getResources().getDrawable(R.drawable.ic_station_ok);
-		StationOverlay stationOverlay = new StationOverlay(greenbike, mContext, mStationManager.getStations());	
-		List<Overlay> mapOverlays = mMapView.getOverlays();
-		mapOverlays.add(stationOverlay);
+		mStationsOverlay.clear();
+		mStationsOverlay.addStations(mStationManager.getStations());
 		mMapView.postInvalidate();
 	}
 	
@@ -119,5 +156,9 @@ public class StationMapFragment extends Fragment {
 				mStationManager.setUserLocation(userLocation);
 			}
 		});
+	}
+
+	public MapView getMapView() {
+		return mMapView;
 	}
 }

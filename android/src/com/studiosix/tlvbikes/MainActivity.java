@@ -10,8 +10,8 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.ImageButton;
 
-public class MainActivity extends FragmentActivity {
-	public enum VisibleFragement {
+public class MainActivity extends FragmentActivity implements HasStationManager {
+	public enum VisibleFragment {
 		MAP,
 		LIST
 	}
@@ -20,8 +20,34 @@ public class MainActivity extends FragmentActivity {
 	private FragmentManager mFragmentManager;
 	private StationMapFragment mStationMapFragment;
 	private StationListFragment mStationListFragment;
-	private VisibleFragement mVisibleFragement = VisibleFragement.MAP;
+	private VisibleFragment mVisibleFragment = VisibleFragment.MAP;
+	
+	public MainActivity() {
+		super();
+	}
 
+	public void showFragment(VisibleFragment fragment) {
+		final ImageButton viewButton = (ImageButton) findViewById(R.id.viewButton);
+		if (fragment == MainActivity.VisibleFragment.LIST) {
+			viewButton.setImageResource(R.drawable.ic_map);
+			mVisibleFragment = VisibleFragment.LIST;
+
+			FragmentTransaction fragmentTransaction = mFragmentManager.beginTransaction();
+			fragmentTransaction.replace(R.id.fragmentContainer, mStationListFragment);
+			fragmentTransaction.setTransition( FragmentTransaction.TRANSIT_FRAGMENT_FADE ).commit();
+
+		} else {
+			viewButton.setImageResource(R.drawable.ic_action_list);
+			mVisibleFragment = VisibleFragment.MAP;
+
+			FragmentTransaction fragmentTransaction = mFragmentManager.beginTransaction();
+			fragmentTransaction.replace(R.id.fragmentContainer, mStationMapFragment);
+			fragmentTransaction.setTransition( FragmentTransaction.TRANSIT_FRAGMENT_FADE ).commit();
+
+		}
+		
+	}
+	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -32,31 +58,21 @@ public class MainActivity extends FragmentActivity {
 		mStationManager = new StationManager();
 
 		// Set up fragments
-		mStationMapFragment = new StationMapFragment(this, mStationManager);
-		mStationListFragment = new StationListFragment(this, mStationManager);
-		mFragmentManager.beginTransaction().add( R.id.fragmentContainer, mStationMapFragment).commit();
+		mStationMapFragment = new StationMapFragment();
+		mStationListFragment = new StationListFragment();
+		mFragmentManager.beginTransaction().add(R.id.fragmentContainer, mStationMapFragment).commit();
 
 		// Set up action bar
 		final ImageButton viewButton = (ImageButton) findViewById(R.id.viewButton);
 		viewButton.setOnClickListener(new OnClickListener() {
 			public void onClick(View v) {
-				if (mVisibleFragement == MainActivity.VisibleFragement.MAP) {
-					viewButton.setImageResource(R.drawable.ic_map);
-					mVisibleFragement = VisibleFragement.LIST;
-
-					FragmentTransaction fragmentTransaction = mFragmentManager.beginTransaction();
-					fragmentTransaction.replace(R.id.fragmentContainer, mStationListFragment);
-					fragmentTransaction.setTransition( FragmentTransaction.TRANSIT_FRAGMENT_FADE ).commit();
-
+				VisibleFragment switchToFragment;
+				if (mVisibleFragment == VisibleFragment.MAP) {
+					switchToFragment = VisibleFragment.LIST;
 				} else {
-					viewButton.setImageResource(R.drawable.ic_action_list);
-					mVisibleFragement = VisibleFragement.MAP;
-
-					FragmentTransaction fragmentTransaction = mFragmentManager.beginTransaction();
-					fragmentTransaction.replace(R.id.fragmentContainer, mStationMapFragment);
-					fragmentTransaction.setTransition( FragmentTransaction.TRANSIT_FRAGMENT_FADE ).commit();
-
+					switchToFragment = VisibleFragment.MAP;
 				}
+				showFragment(switchToFragment);
 			}
 		});
 		ImageButton refreshButton = (ImageButton) findViewById(R.id.refreshButton);
@@ -65,7 +81,7 @@ public class MainActivity extends FragmentActivity {
 				new UpdateStationsTask().execute();
 			}
 		});
-
+		
 		// Set up location
 		/*LocationManager locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
 		LocationListener locationListener = new LocationListener() {
@@ -147,5 +163,13 @@ public class MainActivity extends FragmentActivity {
 				this.dialog.dismiss();
 			}
 		}
+	}
+
+	public StationManager getStationManager() {
+		return mStationManager;
+	}
+
+	public StationMapFragment getStationMapFragment() {
+		return mStationMapFragment;
 	}
 }
