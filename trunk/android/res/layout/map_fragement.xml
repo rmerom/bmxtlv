@@ -8,8 +8,10 @@
         android:id="@+id/mapview"
         android:layout_width="fill_parent"
         android:layout_height="fill_parent"
-        android:apiKey="0juUgxPXH-dg9DJ7-5yKAJb82Q1-dxGwWnXhlTw"
+        android:apiKey="0XSrdyv57NkzYQ-2sn7IUNQEMH_mr194VI1ZTAw"
         android:clickable="true" >
+<!--         android:apiKey="08Bq1sVkL9jAzHvIzINpNqCU_Lkai2EZ4UWv58A"   debug -->
+        
     </com.google.android.maps.MapView>
 
     <ImageButton

@@ -10,9 +10,9 @@ public class Station {
 	public enum Status {
 	    OK,
 	    NO_BIKES,
-	    ONE_BIKE,
+	    FEW_BIKES,
 	    NO_DOCKS,
-	    ONE_DOCK,
+	    FEW_DOCKS,
 	    NO_INFO
 	}
 	
@@ -20,7 +20,6 @@ public class Station {
 	private String mId;
 	private int mLatitude;
 	private int mLongtitude;
-	private Status mStatus;
 	private int mAvailableBikes;
 	private int mAvailableDocks;
 	
@@ -30,7 +29,6 @@ public class Station {
 		this.mId = id;
 		this.mLatitude = latitude;
 		this.mLongtitude = longtitude;
-		this.mStatus = Status.NO_INFO;
 		this.mAvailableBikes = 0;
 		this.mAvailableDocks = 0;
 	}
@@ -52,13 +50,21 @@ public class Station {
 	}
 	
 	public Status getStatus() {
-		return mStatus;
+		if (mAvailableBikes == 0 && mAvailableDocks == 0) {
+			return Station.Status.NO_INFO;
+		} else if (mAvailableBikes == 0) {
+			return Station.Status.NO_BIKES;
+		} else if (mAvailableBikes == 1 || mAvailableBikes == 2) {
+			return Station.Status.FEW_BIKES;
+		} else if (mAvailableDocks == 0) {
+			return Station.Status.NO_DOCKS;
+		} else if (mAvailableDocks == 1 | mAvailableDocks == 2) {
+			return Station.Status.FEW_DOCKS;
+		} else {
+			return Station.Status.OK;
+		}
 	}
 	
-	public void setStatus(Status status) {
-		mStatus = status;
-	}
-
 	public int getAvailableBikes() {
 		return mAvailableBikes;
 	}
