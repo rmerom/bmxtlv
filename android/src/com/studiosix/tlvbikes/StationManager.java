@@ -8,8 +8,6 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.SortedSet;
-import java.util.TreeSet;
 
 import android.location.Location;
 
@@ -18,9 +16,6 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
 public class StationManager {
-	private static final String STATION_NAMES_URL = "https://spreadsheets.google.com/feeds/list/0AoOjWPdv2TXodHlMTTFrakJKR2F6cldJTGktQnNXV0E/od6/public/basic/cn6ca?alt=json";
-	private static final String STATION_LOCATION_URL = "https://spreadsheets.google.com/feeds/list/0AoOjWPdv2TXodHlMTTFrakJKR2F6cldJTGktQnNXV0E/od6/public/basic/205aqv?alt=json";
-	private static final String STATION_STATUS_URL = "https://spreadsheets.google.com/feeds/list/0AoOjWPdv2TXodHlMTTFrakJKR2F6cldJTGktQnNXV0E/od6/public/basic/25ncrc?alt=json";
 	private static final String NEW_STATION_STATUS_URL = "https://tel-o-fast.appspot.com/stationdata?s=h1u1";
 
 	private HashMap<String, Station> mStationsMap = new HashMap<String, Station>();
@@ -44,8 +39,7 @@ public class StationManager {
 			Type type =  new TypeToken<Collection<StationStatus>>(){}.getType();
 			stationsStatus = gson.fromJson(result, type);
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			throw new RuntimeException(e);
 		}
 		return stationsStatus;
 	}

@@ -3,6 +3,6 @@
   <cron>
     <url>/cron/fetch</url>
     <description>Fetch data from Tel-o-fun</description>
-    <schedule>every 1 minutes synchronized</schedule>
+    <schedule>every 2 minutes synchronized</schedule>
   </cron>
 </cronentries>
