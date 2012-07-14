@@ -100,10 +100,11 @@ public class StationOverlay extends ItemizedOverlay<OverlayItem> {
 	protected boolean onTap(final int index) {
 		OverlayItem item = mOverlays.get(index);
 		AlertDialog.Builder dialog = new AlertDialog.Builder(mContext);
+		dialog.setIcon(item.getMarker(OverlayItem.ITEM_STATE_FOCUSED_MASK));
 		dialog.setTitle(item.getTitle());
 		dialog.setMessage(item.getSnippet());
-		dialog.setPositiveButton("OK", null);
-		dialog.setNeutralButton("Directions", new DialogInterface.OnClickListener() {
+		dialog.setNeutralButton("אוקיי", null);
+		dialog.setPositiveButton("הנחיות", new DialogInterface.OnClickListener() {
 			public void onClick(DialogInterface dialog, int which) {
 				if (which == DialogInterface.BUTTON_NEUTRAL) {
 					GeoPoint point = mOverlays.get(index).getPoint(); 
