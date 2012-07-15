@@ -3,49 +3,51 @@ package com.studiosix.tlvbikes;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.Type;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Collection;
 import java.util.HashMap;
 
+import android.content.Context;
 import android.location.Location;
 
 import com.google.android.maps.GeoPoint;
 import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
+import com.google.gson.GsonBuilder;
 
 public class StationManager {
-	private static final String NEW_STATION_STATUS_URL = "https://tel-o-fast.appspot.com/stationdata?s=h1u1";
+	private static final String STATION_STATUS_URL = "https://tel-o-fast.appspot.com/stationdata?s=h1u2";
+	private long MAX_STATION_DATA_AGE_MSECS = 5 /* mins */ * 60 /* secs/mins */ * 1000 /* msecs/secs */;
 
 	private HashMap<String, Station> mStationsMap = new HashMap<String, Station>();
 	private GeoPoint mUserLocation;
 	private Location mUserLocationNew;
+	private Context mContext;
 	
 	private final String TAG = StationManager.class.getSimpleName();
 	
-	public StationManager() {
+	public StationManager(Context context) {
+		mContext = context;
 	}
 
-	public Collection<StationStatus> retrieveStationStatuses() {
-		Collection<StationStatus> stationsStatus = null;
+	public StationStatuses retrieveStationStatuses() {
+		StationStatuses stationsStatuses = null;
 		URL url;
 		try {
-			url = new URL(NEW_STATION_STATUS_URL);
+			url = new URL(STATION_STATUS_URL);
 			HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
 			InputStream instream = new BufferedInputStream(urlConnection.getInputStream());
 			String result = Utils.convertStreamToString(instream);
-			Gson gson = new Gson();
-			Type type =  new TypeToken<Collection<StationStatus>>(){}.getType();
-			stationsStatus = gson.fromJson(result, type);
+			Gson gson = new GsonBuilder().setDateFormat("MMM dd, yyyy HH:mm:ss zzzz").create();
+			stationsStatuses = gson.fromJson(result, StationStatuses.class);
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
-		return stationsStatus;
+		return stationsStatuses;
 	}
 		
-	public void init() {
-		refresh();
+	public Long init() {
+		return refresh();
 		/*
 		populateStationMap(stations);
 		//ServerData serverData = null; //retrieveDataFromServer(false);
@@ -53,9 +55,14 @@ public class StationManager {
 		updateStationStatus(serverData);*/
 	}
 
-	public void refresh() {
-		Collection<StationStatus> stations = retrieveStationStatuses();
-		populateStationMap(stations);
+	public Long refresh() {
+		Long timestamp = null;
+		StationStatuses stations = retrieveStationStatuses();
+		if ((System.currentTimeMillis() - stations.getTimestamp().getTime()) > MAX_STATION_DATA_AGE_MSECS) {
+			timestamp = stations.getTimestamp().getTime();
+		}
+		populateStationMap(stations.getStationStatuses());
+		return timestamp;
 	}
 
 	public Collection<Station> getStations() {

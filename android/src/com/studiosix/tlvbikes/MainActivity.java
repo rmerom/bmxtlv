@@ -1,6 +1,12 @@
 package com.studiosix.tlvbikes;
 
+import java.text.DateFormat;
+import java.util.Date;
+import java.util.TimeZone;
+
+import android.app.AlertDialog;
 import android.app.ProgressDialog;
+import android.app.AlertDialog.Builder;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
@@ -55,7 +61,7 @@ public class MainActivity extends FragmentActivity implements HasStationManager 
 
 		// Set up managers
 		mFragmentManager = getSupportFragmentManager();
-		mStationManager = new StationManager();
+		mStationManager = new StationManager(this);
 
 		// Set up fragments
 		mStationMapFragment = new StationMapFragment();
@@ -119,6 +125,7 @@ public class MainActivity extends FragmentActivity implements HasStationManager 
 
 	private class InitStationsTask extends AsyncTask<Void, Void, Void> {
 		private final ProgressDialog dialog = new ProgressDialog(MainActivity.this);
+		private Long mTimestamp;
 
 		// can use UI thread here
 		protected void onPreExecute() {
@@ -128,7 +135,7 @@ public class MainActivity extends FragmentActivity implements HasStationManager 
 
 		@Override
 		protected Void doInBackground(Void... params) {
-			mStationManager.init();
+			mTimestamp = mStationManager.init();
 			return null;
 		}
 
@@ -138,11 +145,16 @@ public class MainActivity extends FragmentActivity implements HasStationManager 
 			if (this.dialog.isShowing()) {
 				this.dialog.dismiss();
 			}
+			if (mTimestamp != null) {
+				showStaleDataDialog(mTimestamp);
+			}
 		}
+
 	}
 
 	private class UpdateStationsTask extends AsyncTask<Void, Void, Void> {
 		private final ProgressDialog dialog = new ProgressDialog(MainActivity.this);
+		private Long mTimestamp;
 
 		// can use UI thread here
 		protected void onPreExecute() {
@@ -152,7 +164,7 @@ public class MainActivity extends FragmentActivity implements HasStationManager 
 
 		@Override
 		protected Void doInBackground(Void... params) {
-			mStationManager.refresh();
+			mTimestamp = mStationManager.refresh();
 			return null;
 		}
 
@@ -162,7 +174,20 @@ public class MainActivity extends FragmentActivity implements HasStationManager 
 			if (this.dialog.isShowing()) {
 				this.dialog.dismiss();
 			}
+			if (mTimestamp != null) {
+				showStaleDataDialog(mTimestamp);
+			}
 		}
+	}
+
+	private void showStaleDataDialog(long timestamp) {
+		Builder builder = new AlertDialog.Builder(MainActivity.this);
+		DateFormat dateFormat = DateFormat.getDateTimeInstance();
+		dateFormat.setTimeZone(TimeZone.getDefault());
+		builder.setTitle("מידע שאינו מעודכן");
+		builder.setMessage("המידע המוצג הינו משעה: " + dateFormat.format(new Date(timestamp)));
+		builder.setPositiveButton("אוקיי", null);
+		builder.show();
 	}
 
 	public StationManager getStationManager() {
