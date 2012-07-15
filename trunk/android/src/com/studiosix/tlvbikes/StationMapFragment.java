@@ -67,7 +67,6 @@ public class StationMapFragment extends Fragment {
 		Log.w("StationMapFragment", "onCreate called");
 		mContext = getActivity();
 		super.onCreate(state);
-		
 	}
 	
 

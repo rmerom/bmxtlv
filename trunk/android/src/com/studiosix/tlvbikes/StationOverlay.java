@@ -12,8 +12,8 @@ import com.google.android.maps.GeoPoint;
 import com.google.android.maps.ItemizedOverlay;
 import com.google.android.maps.OverlayItem;
 
-public class StationOverlay extends ItemizedOverlay<OverlayItem> {
-	private ArrayList<OverlayItem> mOverlays = new ArrayList<OverlayItem>();
+public class StationOverlay extends ItemizedOverlay<StationOverlayItem> {
+	private ArrayList<StationOverlayItem> mOverlays = new ArrayList<StationOverlayItem>();
 	private Context mContext;
 	private Drawable greenbike, nobikes, nodocks, onebike, onedock, dunno;
 
@@ -30,20 +30,16 @@ public class StationOverlay extends ItemizedOverlay<OverlayItem> {
 		mContext = context;
 		
 		// Set up markers
-		greenbike = mContext.getResources().getDrawable(R.drawable.ic_station_ok);
-		int width = greenbike.getIntrinsicWidth();
-		int height = greenbike.getIntrinsicHeight();
-		greenbike.setBounds(-width / 2, -height, width - (width / 2), 0);
-		nobikes = mContext.getResources().getDrawable(R.drawable.ic_station_no_bikes);
-		nobikes.setBounds(-width / 2, -height, width - (width / 2), 0);
-		nodocks = mContext.getResources().getDrawable(R.drawable.ic_station_no_docks);
-		nodocks.setBounds(-width / 2, -height, width - (width / 2), 0);
-		onebike = mContext.getResources().getDrawable(R.drawable.ic_station_few_bikes);
-		onebike.setBounds(-width / 2, -height, width - (width / 2), 0);
-		onedock = mContext.getResources().getDrawable(R.drawable.ic_station_few_docks);
-		onedock.setBounds(-width / 2, -height, width - (width / 2), 0);
-		dunno = mContext.getResources().getDrawable(R.drawable.ic_station_unknown);
-		dunno.setBounds(-width / 2, -height, width - (width / 2), 0);
+		greenbike = getDrawable(R.drawable.ic_station_ok);
+		nobikes = getDrawable(R.drawable.ic_station_no_bikes);
+		nodocks = getDrawable(R.drawable.ic_station_no_docks);
+		onebike = getDrawable(R.drawable.ic_station_few_bikes);
+		onedock = getDrawable(R.drawable.ic_station_few_docks);
+		dunno = getDrawable(R.drawable.ic_station_unknown);
+	}
+	
+	private Drawable getDrawable(int drawableId) {
+		return boundCenterBottom(mContext.getResources().getDrawable(drawableId));
 	}
 		
 	public void addStations(Collection<Station> stations) {
@@ -51,7 +47,7 @@ public class StationOverlay extends ItemizedOverlay<OverlayItem> {
 			GeoPoint stationPoint = new GeoPoint(station.getLatitude() , station.getLongtitude());
 			String stationSnippet = "אופניים: " + station.getAvailableBikes() + "\n" +
 					"תחנות: " + station.getAvailableDocks();
-			OverlayItem overlayitem = new OverlayItem(stationPoint, station.getName(), stationSnippet);
+			StationOverlayItem overlayitem = new StationOverlayItem(stationPoint, station.getName(), stationSnippet);
 
 			switch (station.getStatus()) {
 			case OK:
@@ -82,12 +78,12 @@ public class StationOverlay extends ItemizedOverlay<OverlayItem> {
 
 	}
 
-	public void addOverlay(OverlayItem overlay) {
+	public void addOverlay(StationOverlayItem overlay) {
 		mOverlays.add(overlay);
 	}
 
 	@Override
-	protected OverlayItem createItem(int i) {
+	protected StationOverlayItem createItem(int i) {
 		return mOverlays.get(i);
 	}
 
@@ -98,15 +94,15 @@ public class StationOverlay extends ItemizedOverlay<OverlayItem> {
 
 	@Override
 	protected boolean onTap(final int index) {
-		OverlayItem item = mOverlays.get(index);
+		StationOverlayItem item = mOverlays.get(index);
 		AlertDialog.Builder dialog = new AlertDialog.Builder(mContext);
-		dialog.setIcon(item.getMarker(OverlayItem.ITEM_STATE_FOCUSED_MASK));
+		dialog.setIcon(item.getMarkerCopy());
 		dialog.setTitle(item.getTitle());
 		dialog.setMessage(item.getSnippet());
 		dialog.setNeutralButton("אוקיי", null);
 		dialog.setPositiveButton("הנחיות", new DialogInterface.OnClickListener() {
 			public void onClick(DialogInterface dialog, int which) {
-				if (which == DialogInterface.BUTTON_NEUTRAL) {
+				if (which == DialogInterface.BUTTON_POSITIVE) {
 					GeoPoint point = mOverlays.get(index).getPoint(); 
 					Utils.navigateTo(mContext, point.getLatitudeE6(), point.getLongitudeE6());
 				}
@@ -114,28 +110,5 @@ public class StationOverlay extends ItemizedOverlay<OverlayItem> {
 		});
 		dialog.show();
 		return true;
-		/*
-		AlertDialog.Builder builder;
-		AlertDialog alertDialog;
-		LayoutInflater inflater = (LayoutInflater) mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-		View layout = inflater.inflate(R.layout.station_dialog,
-		                               (ViewGroup) findViewById(R.id.mapview));
-		
-		TextView text = (TextView) layout.findViewById(R.id.dialogBikeCount);
-		text.setText("11");
-
-		AlertDialog.Builder builder = new AlertDialog.Builder(mContext);
-		builder.setView(layout);
-		alertDialog = builder.create();
-		
-		Dialog dialog = new Dialog(mContext);
-
-		dialog.setContentView(R.layout.station_dialog);
-		//dialog.setTitle(item.getTitle());
-		TextView text = (TextView) dialog.findViewById(R.id.dialogBikeCount);
-		text.setText("15");
-		
-		dialog.show();
-		return true;*/
 	}
 }
