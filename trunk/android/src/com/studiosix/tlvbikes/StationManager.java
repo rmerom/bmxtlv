@@ -18,7 +18,7 @@ import com.google.gson.GsonBuilder;
 
 public class StationManager {
 	private static final String STATION_STATUS_URL = "https://tel-o-fast.appspot.com/stationdata?s=h1u2";
-	private long MAX_STATION_DATA_AGE_MSECS = 5 /* mins */ * 60 /* secs/mins */ * 1000 /* msecs/secs */;
+	private long MAX_STATION_DATA_AGE_MSECS = 6 /* mins */ * 60 /* secs/mins */ * 1000 /* msecs/secs */;
 
 	private HashMap<String, Station> mStationsMap = new HashMap<String, Station>();
 	private GeoPoint mUserLocation;
@@ -49,11 +49,6 @@ public class StationManager {
 		
 	public Long init() {
 		return refresh();
-		/*
-		populateStationMap(stations);
-		//ServerData serverData = null; //retrieveDataFromServer(false);
-		getStationList(serverData);
-		updateStationStatus(serverData);*/
 	}
 
 	public Long refresh() {
@@ -106,151 +101,4 @@ public class StationManager {
 			mStationsMap.put(id, station);
 		}
 	}
-	
-	/*
-	private void getStationList(ServerData serverData) {
-		String namesString = serverData.names;
-		String[] stationNames = namesString.substring(namesString.indexOf("id")).split(",");
-		String[] stationCords = serverData.locations.split(", ");
-		if (stationCords.length != stationNames.length) {
-			Log.i("ERROR", "Names and cords not same length");
-		}
-
-		// Insert into map
-		for (int i = 0; i < stationCords.length; i++) {
-			String[] latLongLine = stationCords[i].split("(: )|(; )");
-			String id = latLongLine[0].trim();
-			int latitude = (int) (Double.parseDouble(latLongLine[1]) * 1e6);
-			int longtitude = (int) (Double.parseDouble(latLongLine[2]) * 1e6);
-			String[] nameLine = stationNames[i].split(": ");
-			String name = nameLine[1].trim();
-			Station station = new Station(name, id, latitude, longtitude);
-			mStationsMap.put(id, station);
-		}
-	}
-	/*
-	private ServerData retrieveDataFromServer(boolean retrieveOnlyStatuses) {
-		ExecutorService executor = Executors.newCachedThreadPool();
-		Future<String> statuses = executor.submit(new DownloadSpreadsheetsRowTask(STATION_STATUS_URL));
-		Future<String> names = null;
-		Future<String> locations = null;
-		if (!retrieveOnlyStatuses) {
-			names = executor.submit(new DownloadSpreadsheetsRowTask(STATION_NAMES_URL));
-			locations = executor.submit(new DownloadSpreadsheetsRowTask(STATION_LOCATION_URL));
-		}
-		try {
-			executor.awaitTermination(15, TimeUnit.SECONDS);
-		  ServerData serverData = new ServerData();
-		  serverData.statuses = statuses.get();
-		  if (names != null) {
-		  	serverData.names = names.get();
-		  	serverData.locations = locations.get();
-		  }
-		  return serverData;
-		} catch (InterruptedException e) {
-			Log.e(TAG, "exception while downloading data", e);
-		} catch (ExecutionException e) {
-			Log.e(TAG, "exception while downloading data", e);
-		}
-		return null;
-	}*/
-/*
-	private void updateStationStatus(ServerData serverData) {
-		String[] stationCords = serverData.statuses.split(", ");
-		for (int i = 0; i < stationCords.length; i++) {
-			String[] latLongLine = stationCords[i].split("(: )");
-			String id = latLongLine[0];
-			if (!id.startsWith("id")) {
-				continue;
-			}
-			int statusNumber = 0;
-			try {
-				statusNumber = Integer.parseInt(latLongLine[1]);
-			} catch (NumberFormatException e) {
-			}
-			Station station = mStationsMap.get(id);
-			if (station == null) {
-				continue;
-			}
-			int availableBikes = statusNumber % 100;
-			int availableDocks = statusNumber / 100;
-			station.setAvailableBikes(availableBikes);
-			station.setAvailableDocks(availableDocks);
-			if (statusNumber == 0) {
-				station.setStatus(Station.Status.NO_INFO);
-			} else if (availableBikes == 0) {
-				station.setStatus(Station.Status.NO_BIKES);
-			} else if (availableBikes == 1 || availableBikes == 2) {
-				station.setStatus(Station.Status.FEW_BIKES);
-			} else if (availableDocks == 0) {
-				station.setStatus(Station.Status.NO_DOCKS);
-			} else if (availableDocks == 1 | availableDocks == 2) {
-				station.setStatus(Station.Status.FEW_DOCKS);
-			} else {
-				station.setStatus(Station.Status.OK);
-			}
-		}
-	}*/
-/*
-	private String getDataFromServer(String URL) {
-		HttpClient client = new DefaultHttpClient();
-		HttpConnectionParams.setConnectionTimeout(client.getParams(), 20000);
-		HttpGet request = new HttpGet(URL); 
-
-		try {
-			HttpEntity entity = client.execute(request).getEntity();
-			if (entity != null) {
-				InputStream instream = entity.getContent();
-
-				// Parse response
-				String result= Utils.convertStreamToString(instream);
-				JSONObject jsonResult = new JSONObject(result);
-				JSONObject entry = jsonResult.getJSONObject("entry");
-				JSONObject content0 = entry.getJSONObject("content");
-				String data = content0.getString("$t");
-				instream.close();
-				return data;
-			}
-		} catch (ClientProtocolException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		} catch (JSONException e) {
-			e.printStackTrace();
-		}
-
-		return null;
-	}
-	
-	private class DownloadSpreadsheetsRowTask implements Callable<String> {
-
-		private final String urlString;
-		
-		DownloadSpreadsheetsRowTask(String urlString) {
-			this.urlString = urlString;
-		}
-
-		public String call() throws Exception {
-			URL url = new URL(urlString);
-			HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
-			try {
-		     InputStream instream = new BufferedInputStream(urlConnection.getInputStream());
-					String result= Utils.convertStreamToString(instream);
-					JSONObject jsonResult = new JSONObject(result);
-					JSONObject entry = jsonResult.getJSONObject("entry");
-					JSONObject content0 = entry.getJSONObject("content");
-					String data = content0.getString("$t");
-		     return data;
-			} finally {
-		     urlConnection.disconnect();
-			}
-		}
-	}
-	
-	private static class ServerData {
-		public String names;
-		public String locations;
-		public String statuses;
-		
-	}*/
 }

@@ -133,8 +133,8 @@ public class MainActivity extends FragmentActivity implements HasStationManager 
 
 		// can use UI thread here
 		protected void onPreExecute() {
-			this.dialog.setMessage("Getting station status...");
-			this.dialog.show();
+			dialog.setMessage("Getting station status...");
+			dialog.show();
 			mIsFetching = true;
 		}
 
@@ -147,8 +147,8 @@ public class MainActivity extends FragmentActivity implements HasStationManager 
 		@Override
 		protected void onPostExecute(Void params) {
 			mStationMapFragment.drawStationsOnMap();
-			if (this.dialog.isShowing()) {
-				this.dialog.dismiss();
+			if (dialog.isShowing()) {
+				dialog.dismiss();
 			}
 			if (mTimestamp != null) {
 				showStaleDataDialog(mTimestamp);
@@ -192,8 +192,16 @@ public class MainActivity extends FragmentActivity implements HasStationManager 
 		Builder builder = new AlertDialog.Builder(MainActivity.this);
 		DateFormat dateFormat = DateFormat.getDateTimeInstance();
 		dateFormat.setTimeZone(TimeZone.getDefault());
-		builder.setTitle("מידע שאינו מעודכן");
-		builder.setMessage("המידע המוצג הינו משעה: " + dateFormat.format(new Date(timestamp)));
+		builder.setTitle("המידע אינו מעודכן");
+		long now = System.currentTimeMillis();
+		long minBefore = Math.round((now - timestamp) / (1000.0 /* msecs/secs */ * 60.0 /* secs/minute */));
+		long hoursBefore = Math.round((now - timestamp) / (1000.0 /* msecs/secs */ * 3600.0 /* secs/hour */));
+		String timeString = minBefore >= 90 
+				?  "- " + Math.round(hoursBefore) + " שעות"
+			  : (minBefore >= 60
+			      ? "שעה"
+			      : "- " + minBefore + " דקות");
+		builder.setMessage("המידע המוצג הינו מלפני כ"  + timeString + " עקב תקלה בשרת");
 		builder.setPositiveButton("אוקיי", null);
 		builder.show();
 	}
