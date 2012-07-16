@@ -27,11 +27,12 @@ public class MainActivity extends FragmentActivity implements HasStationManager 
 	private StationMapFragment mStationMapFragment;
 	private StationListFragment mStationListFragment;
 	private VisibleFragment mVisibleFragment = VisibleFragment.MAP;
+	private boolean mIsFetching = false;
 	
 	public MainActivity() {
 		super();
 	}
-
+	
 	public void showFragment(VisibleFragment fragment) {
 		final ImageButton viewButton = (ImageButton) findViewById(R.id.viewButton);
 		if (fragment == MainActivity.VisibleFragment.LIST) {
@@ -111,6 +112,9 @@ public class MainActivity extends FragmentActivity implements HasStationManager 
 	protected void onResume() {
 		super.onResume();
 		mStationMapFragment.enableLocation();
+		if (!mIsFetching && mStationManager.isStationDataStale()) {
+			new UpdateStationsTask().execute();
+		}
 	}
 
 	@Override
@@ -131,6 +135,7 @@ public class MainActivity extends FragmentActivity implements HasStationManager 
 		protected void onPreExecute() {
 			this.dialog.setMessage("Getting station status...");
 			this.dialog.show();
+			mIsFetching = true;
 		}
 
 		@Override
@@ -148,6 +153,7 @@ public class MainActivity extends FragmentActivity implements HasStationManager 
 			if (mTimestamp != null) {
 				showStaleDataDialog(mTimestamp);
 			}
+			mIsFetching = false;
 		}
 
 	}
@@ -160,6 +166,7 @@ public class MainActivity extends FragmentActivity implements HasStationManager 
 		protected void onPreExecute() {
 			this.dialog.setMessage("Getting station status...");
 			this.dialog.show();
+			mIsFetching = true;
 		}
 
 		@Override
@@ -177,6 +184,7 @@ public class MainActivity extends FragmentActivity implements HasStationManager 
 			if (mTimestamp != null) {
 				showStaleDataDialog(mTimestamp);
 			}
+			mIsFetching = false;
 		}
 	}
 

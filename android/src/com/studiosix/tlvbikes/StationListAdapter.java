@@ -1,8 +1,8 @@
 package com.studiosix.tlvbikes;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Iterator;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 import android.content.Context;
 import android.graphics.Color;
@@ -25,16 +25,10 @@ public class StationListAdapter extends BaseAdapter {
 	public StationListAdapter(Context context, StationManager stationManager) {
 		mContext = context;
 		mStationManager = stationManager;
-		Collection<Station> stations = stationManager.getStations();
-		// Copy the up to the first MAX_STATIONS.
-		int numCopy = Math.min(stations.size(), MAX_STATIONS);
-		mStations = new Station[numCopy];
-		Iterator<Station> iter = stations.iterator();
-		for (int i = 0 ; i < numCopy; ++i) {
-			mStations[i] = iter.next();
-		}
-		DistanceComparator comparator = new DistanceComparator(stationManager.getUserLocation());
-		Arrays.sort(mStations, comparator);
+		List<Station> stations = new ArrayList<Station>();
+		stations.addAll(stationManager.getStations());
+		Collections.sort(stations, new DistanceComparator(stationManager.getUserLocation()));
+		mStations = stations.subList(0, Math.min(stations.size(), MAX_STATIONS)).toArray(new Station[0]);
 	}
 
 	public int getCount() {

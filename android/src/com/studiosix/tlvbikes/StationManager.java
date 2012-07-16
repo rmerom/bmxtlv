@@ -6,6 +6,7 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashMap;
 
 import android.content.Context;
@@ -56,13 +57,21 @@ public class StationManager {
 	}
 
 	public Long refresh() {
-		Long timestamp = null;
 		StationStatuses stations = retrieveStationStatuses();
+		long timestamp = stations.getTimestamp().getTime();
+		Utils.setLastUpdateTimestamp(mContext, new Date(timestamp));
+		
+		Long timestampToReturn = null;
 		if ((System.currentTimeMillis() - stations.getTimestamp().getTime()) > MAX_STATION_DATA_AGE_MSECS) {
-			timestamp = stations.getTimestamp().getTime();
+			timestampToReturn = timestamp;
 		}
 		populateStationMap(stations.getStationStatuses());
-		return timestamp;
+		return timestampToReturn;
+	}
+	
+	public boolean isStationDataStale() {
+		Date lastUpdate = Utils.getLastUpdateTimestamp(mContext);
+		return ((System.currentTimeMillis() - lastUpdate.getTime()) > MAX_STATION_DATA_AGE_MSECS);
 	}
 
 	public Collection<Station> getStations() {

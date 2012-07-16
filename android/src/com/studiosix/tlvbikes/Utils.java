@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.Date;
 
 import android.content.ComponentName;
 import android.content.Context;
@@ -11,6 +12,9 @@ import android.content.Intent;
 import android.net.Uri;
 
 public class Utils {
+	private static final String PREF_FILE = "pref";
+	private static final String KEY_LAST_UPDATE = "lastUpdate";
+
 	public static String convertStreamToString(InputStream is) {
 		BufferedReader reader = new BufferedReader(new InputStreamReader(is));
 		StringBuilder sb = new StringBuilder();
@@ -59,6 +63,13 @@ public class Utils {
 		intent.setComponent(new ComponentName("com.google.android.apps.maps", 
 				"com.google.android.maps.MapsActivity"));
 		context.startActivity(intent);
+	}
+	
+	public static void setLastUpdateTimestamp(Context context, Date when) {
+		context.getSharedPreferences(PREF_FILE, Context.MODE_PRIVATE).edit().putLong(KEY_LAST_UPDATE, when.getTime()).commit();
+	}
 
+	public static Date getLastUpdateTimestamp(Context context) {
+		return new Date(context.getSharedPreferences(PREF_FILE, Context.MODE_PRIVATE).getLong(KEY_LAST_UPDATE, 0L));
 	}
 }
