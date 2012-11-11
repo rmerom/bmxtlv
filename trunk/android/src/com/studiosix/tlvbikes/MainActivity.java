@@ -1,7 +1,6 @@
 package com.studiosix.tlvbikes;
 
 import java.text.DateFormat;
-import java.util.Date;
 import java.util.TimeZone;
 
 import android.app.AlertDialog;
@@ -16,7 +15,7 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.ImageButton;
 
-public class MainActivity extends FragmentActivity implements HasStationManager {
+public class MainActivity extends FragmentActivity {
 	public enum VisibleFragment {
 		MAP,
 		LIST

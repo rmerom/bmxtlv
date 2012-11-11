@@ -14,7 +14,7 @@ public class StationListFragment extends ListFragment {
 	@Override
 	public void onActivityCreated(Bundle savedInstanceState) {
 		super.onActivityCreated(savedInstanceState);
-    mStationManager = ((HasStationManager) getActivity()).getStationManager();
+		mStationManager = ((MainActivity) getActivity()).getStationManager();
 		mListAdapter = new StationListAdapter(getActivity(), mStationManager);
 		setListAdapter(mListAdapter);
 	}
