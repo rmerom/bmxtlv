@@ -123,7 +123,7 @@ public class StationMapFragment extends Fragment {
 		Log.w("StationMapFragment", "onAttach called");
 
 		super.onAttach(activity);
-		mStationManager = ((HasStationManager) activity).getStationManager();
+		mStationManager = ((MainActivity) activity).getStationManager();
 	}
 
 	public void drawStationsOnMap() {		
@@ -155,6 +155,7 @@ public class StationMapFragment extends Fragment {
 				mStationManager.setUserLocation(userLocation);
 			}
 		});
+		
 	}
 
 	public MapView getMapView() {
