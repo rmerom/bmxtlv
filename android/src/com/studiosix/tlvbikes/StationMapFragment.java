@@ -75,7 +75,8 @@ public class StationMapFragment extends Fragment {
 		Log.w("StationMapFragment", "onCreateView called");
 		super.onCreateView(inflater, container, savedInstanceState);
 		if (mRootView == null) {
-			mRootView = LayoutInflater.from(getActivity()).inflate(R.layout.map_fragement, null, false);
+			// LayoutInflater inflater = LayoutInflater.from(getActivity()); 
+			mRootView = inflater.inflate(R.layout.map_fragement, null, false);
 			mMapView = (MapView) mRootView.findViewById(R.id.mapview);
 			// Set up map
 			mMapView.setBuiltInZoomControls(false);
