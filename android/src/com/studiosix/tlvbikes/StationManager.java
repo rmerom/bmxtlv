@@ -33,7 +33,7 @@ public class StationManager {
 	private Location mUserLocationNew;
 	private Context mContext;
 	
-	private final String TAG = StationManager.class.getSimpleName();
+	// private final String TAG = StationManager.class.getSimpleName();
 	
 	public StationManager(Context context) {
 		mContext = context;
@@ -64,10 +64,6 @@ public class StationManager {
 			
 		}
 		return stationsStatuses;
-	}
-		
-	public Long init() {
-		return refresh();
 	}
 
 	public Long refresh() {
@@ -123,9 +119,9 @@ public class StationManager {
 	
 	//Markers for which we look are of the form:
 	//setMarker(34.8179,32.1223,202,
-	//'אהרון בקר 15',
+	//'×�×”×¨×•×Ÿ ×‘×§×¨ 15',
 	//'','20', '11', 
-	//'<a href="javascript:void()" onclick="JumpToStation(34.8214,32.1202,203);"><span style="text-decoration:underline">לאה 16 פינת אלתרמן</span><br></a><a href="javascript:void()" onclick="JumpToStation(34.8132,32.1176,214);"><span style="text-decoration:underline">תל ברוך ביהס אלחריזי</span><br></a><a href="javascript:void()" onclick="JumpToStation(34.8258,32.1218,204);"><span style="text-decoration:underline">צהל פינת עיר שמש בכיכר</span><br></a>');
+	//'<a href="javascript:void()" onclick="JumpToStation(34.8214,32.1202,203);"><span style="text-decoration:underline">×œ×�×” 16 ×¤×™× ×ª ×�×œ×ª×¨×ž×Ÿ</span><br></a><a href="javascript:void()" onclick="JumpToStation(34.8132,32.1176,214);"><span style="text-decoration:underline">×ª×œ ×‘×¨×•×š ×‘×™×”×¡ ×�×œ×—×¨×™×–×™</span><br></a><a href="javascript:void()" onclick="JumpToStation(34.8258,32.1218,204);"><span style="text-decoration:underline">×¦×”×œ ×¤×™× ×ª ×¢×™×¨ ×©×ž×© ×‘×›×™×›×¨</span><br></a>');
 	private List<StationStatus> parseTelofunContent(String content, Date timestamp) {
 		final String wsNumberWs = "\\s*([\\d|\\.]+)\\s*"; 
 		String patternToFind = "setMarker\\(" + wsNumberWs + "," + wsNumberWs + ",\\s*(\\d+)\\s*,\\s*'(.*?)'\\s*,.*?,\\s*'(\\d+)'\\s*,\\s*'(\\d+)";

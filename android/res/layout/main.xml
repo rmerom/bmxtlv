@@ -17,7 +17,9 @@
             android:layout_height="32dp"
             android:layout_alignParentLeft="true"
             android:layout_centerVertical="true"
-            android:src="@drawable/ic_station_ok" android:paddingRight="5dp" android:paddingLeft="5dp"/>
+            android:paddingLeft="5dp"
+            android:paddingRight="5dp"
+            android:src="@drawable/ic_station_ok" />
 
         <TextView
             android:id="@+id/textView1"
@@ -28,7 +30,7 @@
             android:text="@string/app_name"
             android:textAppearance="?android:attr/textAppearanceLarge"
             android:textColor="#000000"
-            android:textSize="18dp" />
+            android:textSize="18sp" />
 
         <ImageButton
             android:id="@+id/refreshButton"
@@ -60,10 +62,47 @@
         android:background="#CCCCCC" >
     </LinearLayout>
 
-    <FrameLayout
-	    android:id="@+id/fragmentContainer"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent">
-    </FrameLayout>
+    <ViewSwitcher
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        android:id="@+id/mainViewSwitcher"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent" >
+
+        <RelativeLayout
+            xmlns:android="http://schemas.android.com/apk/res/android"
+            android:id="@+id/relativeLayout1"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" >
+
+            <com.google.android.maps.MapView
+                android:id="@+id/mapview"
+                android:layout_width="fill_parent"
+                android:layout_height="fill_parent"
+                android:apiKey="0GN7MeyNr6gQlQ6B8uAFO3FBrCql65dfNrGMDEw"
+                android:clickable="true" >
+
+                <!-- android:apiKey="08Bq1sVkL9jAzHvIzINpNqCU_Lkai2EZ4UWv58A"   debug -->
+
+            </com.google.android.maps.MapView>
+
+            <ImageButton
+                android:id="@+id/centerMyLocationButton"
+                android:layout_width="61dp"
+                android:layout_height="61dp"
+                android:layout_alignParentBottom="true"
+                android:layout_alignParentRight="true"
+                android:background="@android:color/transparent"
+                android:src="@drawable/ic_my_location" />
+        </RelativeLayout>
+        <FrameLayout
+			android:id="@+id/stationListContainer"
+			android:layout_width="fill_parent"
+			android:layout_height="fill_parent">
+			<ListView
+				android:id="@+id/stationList"
+				android:layout_width="fill_parent"
+				android:layout_height="fill_parent"></ListView>
+		</FrameLayout>
+    </ViewSwitcher>
 
 </LinearLayout>
