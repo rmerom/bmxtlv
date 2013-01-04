@@ -4,81 +4,54 @@ import java.text.DateFormat;
 import java.util.TimeZone;
 
 import android.app.AlertDialog;
-import android.app.ProgressDialog;
 import android.app.AlertDialog.Builder;
+import android.app.ProgressDialog;
+import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.support.v4.app.FragmentActivity;
-import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentTransaction;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemClickListener;
 import android.widget.ImageButton;
+import android.widget.ListView;
+import android.widget.Toast;
+import android.widget.ViewSwitcher;
 
-public class MainActivity extends FragmentActivity {
-	public enum VisibleFragment {
-		MAP,
-		LIST
-	}
+import com.google.android.maps.GeoPoint;
+import com.google.android.maps.MapActivity;
+import com.google.android.maps.MapController;
+import com.google.android.maps.MapView;
+import com.google.android.maps.MyLocationOverlay;
 
+public class MainActivity extends MapActivity {
 	private StationManager mStationManager;
-	private FragmentManager mFragmentManager;
-	private StationMapFragment mStationMapFragment;
-	private StationListFragment mStationListFragment;
-	private VisibleFragment mVisibleFragment = VisibleFragment.MAP;
+	private MapView mMapView = null;
+	MyLocationOverlay mMyLocationOverlay;
 	private boolean mIsFetching = false;
+	private StationOverlay mStationsOverlay;
+	private ViewSwitcher mSwitcher;
+	StationListAdapter mListAdapter;
 	
 	public MainActivity() {
 		super();
-	}
-	
-	public void showFragment(VisibleFragment fragment) {
-		final ImageButton viewButton = (ImageButton) findViewById(R.id.viewButton);
-		if (fragment == MainActivity.VisibleFragment.LIST) {
-			viewButton.setImageResource(R.drawable.ic_map);
-			mVisibleFragment = VisibleFragment.LIST;
-
-			FragmentTransaction fragmentTransaction = mFragmentManager.beginTransaction();
-			fragmentTransaction.replace(R.id.fragmentContainer, mStationListFragment);
-			fragmentTransaction.setTransition( FragmentTransaction.TRANSIT_FRAGMENT_FADE ).commit();
-
-		} else {
-			viewButton.setImageResource(R.drawable.ic_action_list);
-			mVisibleFragment = VisibleFragment.MAP;
-
-			FragmentTransaction fragmentTransaction = mFragmentManager.beginTransaction();
-			fragmentTransaction.replace(R.id.fragmentContainer, mStationMapFragment);
-			fragmentTransaction.setTransition( FragmentTransaction.TRANSIT_FRAGMENT_FADE ).commit();
-
-		}
-		
 	}
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.main);
-
-		// Set up managers
-		mFragmentManager = getSupportFragmentManager();
 		mStationManager = new StationManager(this);
 
-		// Set up fragments
-		mStationMapFragment = new StationMapFragment();
-		mStationListFragment = new StationListFragment();
-		mFragmentManager.beginTransaction().add(R.id.fragmentContainer, mStationMapFragment).commit();
-
+		mSwitcher = (ViewSwitcher)findViewById(R.id.mainViewSwitcher);
+		configureStationsList();
+		configureMapView();
+		
 		// Set up action bar
 		final ImageButton viewButton = (ImageButton) findViewById(R.id.viewButton);
 		viewButton.setOnClickListener(new OnClickListener() {
 			public void onClick(View v) {
-				VisibleFragment switchToFragment;
-				if (mVisibleFragment == VisibleFragment.MAP) {
-					switchToFragment = VisibleFragment.LIST;
-				} else {
-					switchToFragment = VisibleFragment.MAP;
-				}
-				showFragment(switchToFragment);
+				mSwitcher.showNext();
 			}
 		});
 		ImageButton refreshButton = (ImageButton) findViewById(R.id.refreshButton);
@@ -87,30 +60,77 @@ public class MainActivity extends FragmentActivity {
 				new UpdateStationsTask().execute();
 			}
 		});
-		
-		// Set up location
-		/*LocationManager locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
-		LocationListener locationListener = new LocationListener() {
-			public void onLocationChanged(Location location) {
-				mUserLocation = new GeoPoint((int)(location.getLatitude() * 1E6), 
-						(int)(location.getLongitude() * 1E6));
-				mStationManager.setUserLocation(location);
-			}
-			public void onStatusChanged(String provider, int status, Bundle extras) {}
-			public void onProviderEnabled(String provider) {}
-			public void onProviderDisabled(String provider) {}
-		};
-
-		locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, locationListener);*/
 
 		// Update station manager
-		new InitStationsTask().execute();
+		new UpdateStationsTask().execute();
+	}
+
+	public void configureStationsList() {
+		final ListView stationListView = (ListView) findViewById(R.id.stationList);
+		mListAdapter = new StationListAdapter(this, mStationManager);
+		stationListView.setAdapter(mListAdapter);
+		stationListView.setOnItemClickListener(new OnItemClickListener() {
+			public void onItemClick(AdapterView<?> arg0, View itemView, int position,
+					long arg3) {
+				int currentId = mSwitcher.getCurrentView().getId();
+				if (currentId != R.id.stationListContainer)
+					return;
+				Station station = (Station) mListAdapter.getItem(position);
+				GeoPoint geoPoint = new GeoPoint(station.getLatitude(), station
+						.getLongtitude());
+				mMapView.getController().animateTo(geoPoint);
+				mSwitcher.showNext();
+			}
+		});
+	}
+
+	private void configureMapView() {
+		mMapView = (MapView) findViewById(R.id.mapview);
+		mMapView.setBuiltInZoomControls(false);
+		final GeoPoint defaultLocation = new GeoPoint(32066501, 34777822);  // Tel Aviv
+		mMapView.getController().setCenter(defaultLocation);
+
+		final MapController mMapController = mMapView.getController();
+		mMapController.setZoom(15);
+		// Set up user location
+		mMyLocationOverlay = new MyLocationOverlay(this, mMapView);
+		mMyLocationOverlay.enableMyLocation();
+		mMyLocationOverlay.runOnFirstFix(new Runnable() {
+			public void run() {
+				GeoPoint userLocation = mMyLocationOverlay.getMyLocation();
+				if (userLocation == null) {
+					return;
+				}
+				if (userLocation.getLatitudeE6() < 32131940 &&
+						userLocation.getLatitudeE6() > 32030381 &&
+						userLocation.getLongitudeE6()  < 34847946 &&
+						userLocation.getLongitudeE6() > 34739285) {
+					mMapController.animateTo(mMyLocationOverlay.getMyLocation());
+				}
+				mMapController.setZoom(17);
+				mStationManager.setUserLocation(userLocation);
+				mStationManager.setUserLocationNew(mMyLocationOverlay.getLastFix());
+			}
+		});
+		mMapView.getOverlays().add(mMyLocationOverlay);
+		ImageButton centerMyLocationButton = (ImageButton)findViewById(R.id.centerMyLocationButton);
+		centerMyLocationButton.setOnClickListener(new OnClickListener() {
+			public void onClick(View v) {
+				centerMapAroundUser();
+			}
+		});
+		Drawable greenbike = this.getResources().getDrawable(R.drawable.ic_station_ok);
+		mStationsOverlay = new StationOverlay(greenbike, this);
+		mMapView.getOverlays().add(mStationsOverlay);
 	}
 
 	@Override
 	protected void onResume() {
 		super.onResume();
-		mStationMapFragment.enableLocation();
+		if (mMyLocationOverlay != null) {
+			mMyLocationOverlay.enableMyLocation();	
+			// mMyLocationOverlay.enableCompass();	
+		}
 		if (!mIsFetching && mStationManager.isStationDataStale()) {
 			new UpdateStationsTask().execute();
 		}
@@ -119,14 +139,31 @@ public class MainActivity extends FragmentActivity {
 	@Override
 	protected void onPause() {
 		super.onPause();
-		mStationMapFragment.disableLocation();
+		if (mMyLocationOverlay != null) {
+			mMyLocationOverlay.disableMyLocation();
+			// mMyLocationOverlay.disableCompass();
+		}
 	}
 
+	private void centerMapAroundUser() {
+		Toast toast = Toast.makeText(this, "Getting your location...", Toast.LENGTH_SHORT);
+		toast.show();
+
+		mMyLocationOverlay.runOnFirstFix(new Runnable() {
+			public void run() {
+				GeoPoint userLocation = mMyLocationOverlay.getMyLocation();
+				mMapView.getController().animateTo(userLocation);
+				mStationManager.setUserLocation(userLocation);
+			}
+		});
+		
+	}
+	
 	protected boolean isRouteDisplayed() {
 		return false;
 	}
 
-	private class InitStationsTask extends AsyncTask<Void, Void, Void> {
+	private class UpdateStationsTask extends AsyncTask<Void, Void, Void> {
 		private final ProgressDialog dialog = new ProgressDialog(MainActivity.this);
 		private Long mTimestamp;
 
@@ -139,13 +176,15 @@ public class MainActivity extends FragmentActivity {
 
 		@Override
 		protected Void doInBackground(Void... params) {
-			mTimestamp = mStationManager.init();
+			mTimestamp = mStationManager.refresh();
 			return null;
 		}
 
 		@Override
 		protected void onPostExecute(Void params) {
-			mStationMapFragment.drawStationsOnMap();
+			mStationsOverlay.clear();
+			mStationsOverlay.addStations(mStationManager.getStations()); 
+	
 			if (dialog.isShowing()) {
 				dialog.dismiss();
 			}
@@ -153,38 +192,11 @@ public class MainActivity extends FragmentActivity {
 				showStaleDataDialog(mTimestamp);
 			}
 			mIsFetching = false;
+			if (mMapView != null) 
+				mMapView.postInvalidate();
+			mListAdapter.updateStations();
 		}
 
-	}
-
-	private class UpdateStationsTask extends AsyncTask<Void, Void, Void> {
-		private final ProgressDialog dialog = new ProgressDialog(MainActivity.this);
-		private Long mTimestamp;
-
-		// can use UI thread here
-		protected void onPreExecute() {
-			this.dialog.setMessage("Getting station status...");
-			this.dialog.show();
-			mIsFetching = true;
-		}
-
-		@Override
-		protected Void doInBackground(Void... params) {
-			mTimestamp = mStationManager.refresh();
-			return null;
-		}
-
-		@Override
-		protected void onPostExecute(Void params) {
-			mStationMapFragment.drawStationsOnMap();
-			if (this.dialog.isShowing()) {
-				this.dialog.dismiss();
-			}
-			if (mTimestamp != null) {
-				showStaleDataDialog(mTimestamp);
-			}
-			mIsFetching = false;
-		}
 	}
 
 	private void showStaleDataDialog(long timestamp) {
@@ -207,9 +219,5 @@ public class MainActivity extends FragmentActivity {
 
 	public StationManager getStationManager() {
 		return mStationManager;
-	}
-
-	public StationMapFragment getStationMapFragment() {
-		return mStationMapFragment;
 	}
 }

@@ -25,10 +25,15 @@ public class StationListAdapter extends BaseAdapter {
 	public StationListAdapter(Context context, StationManager stationManager) {
 		mContext = context;
 		mStationManager = stationManager;
+		updateStations();
+	}
+
+	public void updateStations() {
 		List<Station> stations = new ArrayList<Station>();
-		stations.addAll(stationManager.getStations());
-		Collections.sort(stations, new DistanceComparator(stationManager.getUserLocation()));
+		stations.addAll(mStationManager.getStations());
+		Collections.sort(stations, new DistanceComparator(mStationManager.getUserLocation()));
 		mStations = stations.subList(0, Math.min(stations.size(), MAX_STATIONS)).toArray(new Station[0]);
+		notifyDataSetChanged();
 	}
 
 	public int getCount() {
@@ -44,10 +49,9 @@ public class StationListAdapter extends BaseAdapter {
 	}
 
 	public View getView(int position, View convertView, ViewGroup parent) {
-		RelativeLayout itemLayout;
 		Station station = mStations[position];
 
-		itemLayout= (RelativeLayout) LayoutInflater.from(mContext).inflate(R.layout.station_list_item, parent, false);
+		RelativeLayout itemLayout= (RelativeLayout) LayoutInflater.from(mContext).inflate(R.layout.station_list_item, parent, false);
 
 		TextView stationNameView = (TextView) itemLayout.findViewById(R.id.listTitle);
 		stationNameView.setText(station.getName());
