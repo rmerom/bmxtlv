@@ -78,11 +78,11 @@
                 android:id="@+id/mapview"
                 android:layout_width="fill_parent"
                 android:layout_height="fill_parent"
-                android:apiKey="0GN7MeyNr6gQlQ6B8uAFO3FBrCql65dfNrGMDEw"
+                android:apiKey="0GN7MeyNr6gRLh7761Bqbg3o80nY-gra4h5ximg"
                 android:clickable="true" >
 
-                <!-- android:apiKey="08Bq1sVkL9jAzHvIzINpNqCU_Lkai2EZ4UWv58A"   debug -->
-
+                <!-- android:apiKey="08Bq1sVkL9jAzHvIzINpNqCU_Lkai2EZ4UWv58A"   roman's debug -->
+                <!-- roman's release keys android:apiKey="0GN7MeyNr6gQlQ6B8uAFO3FBrCql65dfNrGMDEw" -->
             </com.google.android.maps.MapView>
 
             <ImageButton
